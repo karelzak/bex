@@ -5,6 +5,8 @@
 #include "list.h"
 #include "debug.h"
 
+#include <libwebsockets.h>
+
 #include "libbex.h"
 
 /*
@@ -12,7 +14,8 @@
  */
 #define BEX_DEBUG_HELP		(1 << 0)
 #define BEX_DEBUG_INIT		(1 << 1)
-#define BEX_DEBUG_WSS		(1 << 1)
+#define BEX_DEBUG_WSS		(1 << 2)
+#define BEX_DEBUG_PLAT		(1 << 3)
 
 #define BEX_DEBUG_ALL		0xFFFF
 
@@ -47,6 +50,27 @@ struct libbex_iter {
 		(itr)->p = IS_ITER_FORWARD(itr) ? \
 				(itr)->p->next : (itr)->p->prev; \
 	} while(0)
+
+
+struct libbex_event {
+	int	refcount;
+	char	*name;
+
+	struct list_head	events;		/* platform events list */
+};
+
+struct libbex_platform {
+	int	refcount;
+
+	char	*uri_path;
+	char	*uri_addr;
+	char	*uri_prot;
+	int	uri_port;
+	int	uri_ssl;
+
+	struct list_head	events;
+
+};
 
 
 #endif /* _LIBBEX_PRIVATE_H */

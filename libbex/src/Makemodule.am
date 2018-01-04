@@ -8,13 +8,15 @@ libbex_la_SOURCES = \
 	libbex/src/bexP.h \
 	libbex/src/init.c \
 	libbex/src/iter.c \
-	libbex/src/version.c
+	libbex/src/version.c \
+	libbex/src/event.c \
+	libbex/src/platform.c \
 	$(nodist_bexinc_HEADERS)
 
 nodist_libbex_la_SOURCES = libbex/src/bexP.h
 
 libbex_la_LIBADD = \
-	$(WEBSOCKET_LIBS)
+	$(WEBSOCKETS_LIBS)
 
 libbex_la_CFLAGS = \
 	$(AM_CFLAGS) \

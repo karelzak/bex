@@ -64,6 +64,21 @@ struct libmnt_iter;
 #endif
 
 
+/**
+ * libbex_event
+ *
+ * Platform events handler
+ */
+struct libbex_event;
+
+/**
+ * libbex_platform
+ *
+ * The platform
+ */
+struct libbex_platform;
+
+
 /* init.c */
 extern void bex_init_debug(int mask);
 
@@ -85,6 +100,17 @@ extern void bex_reset_iter(struct libbex_iter *itr, int direction)
 			__bex_attribute__((nonnull));
 extern int bex_iter_get_direction(struct libbex_iter *itr)
 			__bex_attribute__((nonnull));
+
+/* event.c */
+extern struct libbex_event *bex_new_event(const char *name);
+extern void bex_ref_event(struct libbex_event *ev);
+extern void bex_unref_event(struct libbex_event *ev);
+
+/* platform.c */
+extern struct libbex_platform *bex_new_platform(const char *uri);
+extern void bex_ref_platform(struct libbex_platform *pl);
+extern void bex_unref_platform(struct libbex_platform *pl);
+extern int bex_platform_remove_event(struct libbex_platform *pl, struct libbex_event *ex);
 
 #ifdef __cplusplus
 }
