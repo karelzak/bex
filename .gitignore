@@ -53,6 +53,9 @@ stamp-h1
 tags
 update.log
 
+# generated
+libbex/src/libbex.h
+
 #
 # binaries
 #
