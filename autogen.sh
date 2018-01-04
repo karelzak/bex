@@ -39,7 +39,7 @@ autopoint_fun ()
 	return $ret
 }
 
-test -f fetch.c || {
+test -f src/fetch.c || {
 	echo
 	echo "You must run this script in the top-level project directory."
 	echo
@@ -67,6 +67,24 @@ test -f fetch.c || {
 	DIE=1
 }
 
+LIBTOOLIZE=libtoolize
+case `uname` in Darwin*) LIBTOOLIZE=glibtoolize ;; esac
+if ! ($LIBTOOLIZE --version) < /dev/null > /dev/null 2>&1; then
+	echo
+	echo "You must have libtool-2 installed to generate the util-linux build system."
+	echo
+	DIE=1
+else
+	ltver=$($LIBTOOLIZE --version | awk '/^[g]*libtoolize/ { print $4 }')
+	ltver=${ltver:-"none"}
+	test ${ltver##2.} = "$ltver" && {
+		echo
+		echo "You must have libtool version >= 2.x.x, but you have $ltver."
+		echo
+		DIE=1
+	}
+fi
+
 (automake --version) < /dev/null > /dev/null 2>&1 || {
 	echo
 	echo "You must have automake installed to generate the project build system."
@@ -88,6 +106,15 @@ echo "   automake:   $(automake --version | head -1)"
 
 rm -rf autom4te.cache
 
+set -e
+po/update-potfiles
+autopoint_fun --force $AP_OPTS
+if ! grep -q datarootdir po/Makefile.in.in; then
+	echo autopoint does not honor dataroot variable, patching.
+	sed -i -e 's/^datadir *=\(.*\)/datarootdir = @datarootdir@\
+datadir = @datadir@/g' po/Makefile.in.in
+fi
+$LIBTOOLIZE --force $LT_OPTS
 aclocal -I m4 $AL_OPTS
 autoconf $AC_OPTS
 autoheader $AH_OPTS

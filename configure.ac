@@ -8,12 +8,14 @@ AC_PREREQ([2.60])
 
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([m4])
+AC_USE_SYSTEM_EXTENSIONS
+
 AM_INIT_AUTOMAKE([-Wall foreign 1.10 tar-pax dist-bzip2 no-dist-gzip dist-xz -Wno-portability subdir-objects])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])],
 			    [AC_SUBST([AM_DEFAULT_VERBOSITY], [1])])
 
-AC_CONFIG_SRCDIR([fetch.c])
+AC_CONFIG_SRCDIR([src/fetch.c])
 AC_PREFIX_DEFAULT([/usr])
 
 AM_PROG_CC_C_O
@@ -23,6 +25,8 @@ AC_CANONICAL_HOST
 AC_C_CONST
 AC_C_VOLATILE
 AC_C_BIGENDIAN
+AC_SYS_LARGEFILE
+AC_HEADER_ASSERT
 
 dnl Compiler warnings
 UL_WARN_ADD([-fno-common])
@@ -73,10 +77,12 @@ AS_IF([test  "x$darwin_os" = xyes], [
   AC_DEFINE([_DARWIN_C_SOURCE], [1], [Enable MAP_ANON in sys/mman.h on Mac OS X])
 ])
 
-AC_SYS_LARGEFILE
-AC_HEADER_ASSERT
 
-AC_CONFIG_HEADERS([config.h])
+dnl libtool-2       
+LT_INIT             
+                    
+dnl check supported linker flags
+AX_CHECK_VSCRIPT    
 
 m4_ifndef([PKG_PROG_PKG_CONFIG],
   [m4_fatal([Could not locate the pkg-config autoconf
@@ -86,8 +92,102 @@ m4_ifndef([PKG_PROG_PKG_CONFIG],
     ./autogen.sh or autoreconf again.])])
 PKG_PROG_PKG_CONFIG
 
+dnl Don't forget to maintain alternatively allowed versions in autogen.sh!
+AM_GNU_GETTEXT_VERSION([0.18.3])
+AM_GNU_GETTEXT([external])
+
+AS_IF([test -d "$srcdir/po"], [
+  ALL_LINGUAS=`cd $srcdir/po > /dev/null && ls *.po | sed 's/\.po//g'`
+], [
+  ALL_LINGUAS="af am ar as be bg bn_IN bn ca cs cy da de el en_GB es et eu_ES fa fi fr gl gu he hi hr hu hy id is it ja ka kn ko ku lo lt lv mk ml mr ms my nb nl nn no nso or pa pl pt_BR pt ro ru si sk sl sq sr@Latn sr sv ta te th tr uk ur vi zh_CN zh_TW zu"
+])
+
+AC_CHECK_HEADERS([linux/compiler.h linux/blkpg.h linux/major.h], [], [], [
+#ifdef HAVE_LINUX_COMPILER_H
+#include <linux/compiler.h>
+#endif
+])
+AC_CHECK_HEADERS([ \
+	asm/io.h \
+	err.h \
+	errno.h \
+	fcntl.h \
+	getopt.h \
+	inttypes.h \
+	linux/version.h \
+	locale.h \
+	netinet/in.h \
+	paths.h \
+	security/pam_appl.h \
+	stdint.h \
+	stdlib.h \
+	endian.h \
+	byteswap.h \
+	sys/endian.h \
+	sys/disk.h \
+	sys/file.h \
+	sys/io.h \
+	sys/signalfd.h \
+	sys/stat.h \
+	sys/sysmacros.h \
+	sys/time.h \
+	sys/timex.h \
+	sys/types.h \
+	unistd.h
+])
+
+AC_CHECK_HEADERS([langinfo.h],
+		[AM_CONDITIONAL([HAVE_LANGINFO], [true])],
+		[AM_CONDITIONAL([HAVE_LANGINFO], [false])])
+
+AC_CHECK_FUNCS([ \
+	err \
+	errx \
+	fsync \
+	utimensat \
+	getdtablesize \
+	getexecname \
+	getrlimit \
+	getsgnam \
+	mempcpy \
+	mkostemp \
+	nanosleep \
+	rpmatch \
+	scandirat \
+	strnchr \
+	strndup \
+	strnlen \
+	warn \
+	warnx \
+])
+AC_FUNC_FSEEKO
+
+
+AC_MSG_CHECKING([whether program_invocation_short_name is defined])
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+	#include <errno.h>
+]], [[
+	program_invocation_short_name = "test";
+]])], [
+	AC_MSG_RESULT([yes])
+	AC_DEFINE([HAVE_PROGRAM_INVOCATION_SHORT_NAME], [1],
+		[Define if program_invocation_short_name is defined])
+], [
+	AC_MSG_RESULT([no])
+])
+
+
+AC_MSG_CHECKING([whether __progname is defined])
+AC_LINK_IFELSE([AC_LANG_PROGRAM([extern char *__progname;],
+	   [if (*__progname == 0) return;])],
+	   AC_DEFINE([HAVE___PROGNAME], [1], [Define if __progname is defined])
+	   AC_MSG_RESULT([yes]),
+	   AC_MSG_RESULT([no]))
+
+
 PKG_CHECK_MODULES([WEBSOCKETS], [libwebsockets])
 
+AC_CONFIG_HEADERS([config.h])
 
 #
 # Don't use configure.ac to replace install paths! See Makefile PATHFILES for
