@@ -1,7 +1,7 @@
 /*
  * Fundamental C definitions (from util-linux)
  *
- * Copyright (C) 2016-2018 Karel Zak <kzak@redhat.com>
+ * Copyright (C) 2016-2018 Karel Zak <karel.zak.007@gmail.com>
  */
 #ifndef BEX_C_H
 #define BEX_C_H

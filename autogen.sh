@@ -3,7 +3,7 @@
 #
 # Helps generate autoconf/automake stuff, when code is checked out from SCM.
 #
-# Copyright (C) 2006-2018 - Karel Zak <kzak@redhat.com>
+# Copyright (C) 2006-2018 - Karel Zak <karel.zak.007@gmail.com>
 #
 
 srcdir=`dirname $0`

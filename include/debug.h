@@ -1,6 +1,6 @@
 /*
  * Copyright (C) 2014 Ondrej Oprala <ooprala@redhat.com>
- * Copyright (C) 2014-2018 Karel Zak <kzak@redhat.com>
+ * Copyright (C) 2014-2018 Karel Zak <<karel.zak.007@gmail.com>
  *
  * Based on code from util-linux.
  *

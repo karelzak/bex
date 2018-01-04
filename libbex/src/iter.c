@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2018 Karel Zak <kzak@redhat.com>
+ * Copyright (C) 2009-2018 Karel Zak <karel.zak.007@gmail.com>
  *
  * This file may be redistributed under the terms of the
  * GNU Lesser General Public License.

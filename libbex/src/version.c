@@ -1,7 +1,7 @@
 /*
- * version.c - Return the version of the libmount library
+ * version.c - Return the version of the libbex library
  *
- * Copyright (C) 2008-2016 Karel Zak <kzak@redhat.com>
+ * Copyright (C) 2008-2016 Karel Zak <karel.zak.007@gmail.com>
  *
  */
 

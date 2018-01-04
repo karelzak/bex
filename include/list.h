@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 Karel Zak <kzak@redhat.com>
+ * Copyright (C) 2008-2017 Karel Zak <karel.zak.007@gmail.com>
  * Copyright (C) 1999-2008 by Theodore Ts'o
  *
  * This file may be redistributed under the terms of the
