@@ -1,0 +1,12 @@
+BEX_0.1 {
+global:
+	bex_init_debug;
+	bex_reset_iter;
+	bex_iter_get_direction;
+	bex_free_iter;
+
+	bex_get_library_version;
+	bex_parse_version_string;
+local:
+	*;
+};

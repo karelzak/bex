@@ -1,0 +1,5 @@
+include libbex/src/Makemodule.am
+
+pkgconfig_DATA += libbex/bex.pc
+PATHFILES      += libbex/bex.pc
+EXTRA_DIST     += libbex/COPYING

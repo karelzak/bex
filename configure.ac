@@ -60,6 +60,22 @@ AC_SUBST([BSD_WARN_CFLAGS])
 UL_WARN_ADD([-Wno-unused-parameter], [NO_UNUSED_WARN_CFLAGS])
 AC_SUBST([NO_UNUSED_WARN_CFLAGS])
 
+
+dnl version details from <major>.<minor>[-<suffix>]
+PACKAGE_VERSION_MAJOR=$(echo $PACKAGE_VERSION | awk -F. '{print $1}')
+PACKAGE_VERSION_MINOR=$(echo $PACKAGE_VERSION | awk -F. '{print $2}' \
+					      | awk -F- '{print $1}')
+
+PACKAGE_VERSION_RELEASE=$(echo $PACKAGE_VERSION | awk -F. '{print $3}' \
+						| sed 's/.*@<:@^@<:@:digit:@:>@@:>@.*/0/')
+
+dnl libbex version
+LIBBEX_VERSION="$PACKAGE_VERSION_MAJOR.$PACKAGE_VERSION_MINOR.$PACKAGE_VERSION_RELEASE"
+LIBBEX_LT_MAJOR=1
+LIBBEX_LT_MINOR=1
+LIBBEX_LT_MICRO=0
+LIBBEX_VERSION_INFO=`expr $LIBBEX_LT_MAJOR + $LIBBEX_LT_MINOR`:$LIBBEX_LT_MICRO:$LIBBEX_LT_MINOR
+
 linux_os=no
 bsd_os=no
 AS_CASE([${host_os}],
@@ -187,6 +203,13 @@ AC_LINK_IFELSE([AC_LANG_PROGRAM([extern char *__progname;],
 
 PKG_CHECK_MODULES([WEBSOCKETS], [libwebsockets])
 
+AC_SUBST([LIBBEX_VERSION])
+AC_SUBST([LIBBEX_MAJOR_VERSION], $PACKAGE_VERSION_MAJOR)
+AC_SUBST([LIBBEX_MINOR_VERSION], $PACKAGE_VERSION_MINOR)
+AC_SUBST([LIBBEX_PATCH_VERSION], $PACKAGE_VERSION_RELEASE)
+AC_SUBST([LIBBEX_VERSION_INFO])
+AC_DEFINE_UNQUOTED([LIBBEX_VERSION], ["$LIBBEX_VERSION"], [libbex version string])
+
 AC_CONFIG_HEADERS([config.h])
 
 #
@@ -195,6 +218,8 @@ AC_CONFIG_HEADERS([config.h])
 #
 AC_CONFIG_FILES([
 Makefile
+libbex/src/libbex.h
+po/Makefile.in
 ])
 
 AC_OUTPUT

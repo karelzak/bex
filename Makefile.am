@@ -17,7 +17,7 @@ LDADD = $(LTLIBINTL)
 # Work the bug around until it is fixed:
 dist_noinst_DATA = $(dist_man_MANS)
 
-#libbex_incdir = $(top_builddir)/libbex/src
+libbex_incdir = $(top_builddir)/libbex/src
 pkgconfigdir = $(libdir)/pkgconfig
 
 bashcompletiondir = @bashcompletiondir@
@@ -59,7 +59,7 @@ EXTRA_DIST += \
 
 
 include include/Makemodule.am
-#include libbex/Makemodule.am
+include libbex/Makemodule.am
 include src/Makemodule.am
 
 #

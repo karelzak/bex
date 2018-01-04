@@ -2,6 +2,6 @@ bin_PROGRAMS += bex-fetch
 
 bex_fetch_SOURCES = src/fetch.c
 
-bex_fetch_LDADD = $(LDADD)
-bex_fetch_CFLAGS = $(AM_CFLAGS) $(WEBSOCKETS_LIBS)
+bex_fetch_LDADD = $(LDADD) libbex.la
+bex_fetch_CFLAGS = $(AM_CFLAGS) -I$(libbex_incdir)
 bex_fetch_LDFLAGS = $(AM_LDFLAGS) $(WEBSOCKETS_CFLAGS)

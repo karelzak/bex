@@ -251,9 +251,11 @@ static inline size_t get_hostname_max(void)
 #define USAGE_HELP       _(" -h, --help     display this help and exit\n")
 #define USAGE_VERSION    _(" -V, --version  output version information and exit\n")
 
-#define errtryhelp(eval, cmd) __extension__ ({ \
-	fprintf(stderr, _("Try '%s %s --help' for more information.\n"), \
-			program_invocation_short_name, cmd); \
+/* Don't use inline function to avoid '#include "nls.h"' in c.h
+ */
+#define errtryhelp(eval) __extension__ ({ \
+	fprintf(stderr, _("Try '%s --help' for more information.\n"), \
+			program_invocation_short_name); \
 	exit(eval); \
 })
 

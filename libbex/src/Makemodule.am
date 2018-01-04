@@ -1,0 +1,56 @@
+# libbex.h is generated, so it's store in builddir!
+bexincdir = $(includedir)/libbex
+nodist_bexinc_HEADERS = $(top_builddir)/libbex/src/libbex.h
+
+lib_LTLIBRARIES += libbex.la
+libbex_la_SOURCES = \
+	include/list.h \
+	libbex/src/bexP.h \
+	libbex/src/init.c \
+	libbex/src/iter.c \
+	libbex/src/version.c
+	$(nodist_bexinc_HEADERS)
+
+nodist_libbex_la_SOURCES = libbex/src/bexP.h
+
+libbex_la_LIBADD = \
+	$(WEBSOCKET_LIBS)
+
+libbex_la_CFLAGS = \
+	$(AM_CFLAGS) \
+	$(SOLIB_CFLAGS) \
+	-I$(libbex_incdir) \
+	-I$(top_srcdir)/libbex/src
+
+libbex_la_DEPENDENCIES = \
+	libbex/src/libbex.sym \
+	libbex/src/libbex.h.in
+
+libbex_la_LDFLAGS = $(SOLIB_LDFLAGS)
+if HAVE_VSCRIPT
+libbex_la_LDFLAGS += $(VSCRIPT_LDFLAGS),$(top_srcdir)/libbex/src/libbex.sym
+endif
+libbex_la_LDFLAGS += -version-info $(LIBBEX_VERSION_INFO)
+
+
+EXTRA_DIST += \
+	libbex/src/libbex.sym \
+	libbex/src/libbex.h.in
+
+# move lib from $(usrlib_execdir) to $(libdir) if needed
+install-exec-hook-libbex:
+	if test "$(usrlib_execdir)" != "$(libdir)" -a -f "$(DESTDIR)$(usrlib_execdir)/libbex.so"; then \
+		$(MKDIR_P) $(DESTDIR)$(libdir); \
+		mv $(DESTDIR)$(usrlib_execdir)/libbex.so.* $(DESTDIR)$(libdir); \
+		so_img_name=$$(readlink $(DESTDIR)$(usrlib_execdir)/libbex.so); \
+		so_img_rel_target=$$(echo $(usrlib_execdir) | sed 's,\(^/\|\)[^/][^/]*,..,g'); \
+		(cd $(DESTDIR)$(usrlib_execdir) && \
+			rm -f libbex.so && \
+			$(LN_S) $$so_img_rel_target$(libdir)/$$so_img_name libbex.so); \
+	fi
+
+uninstall-hook-libbex:
+	rm -f $(DESTDIR)$(libdir)/libbex.so*
+
+INSTALL_EXEC_HOOKS += install-exec-hook-libbex
+UNINSTALL_HOOKS += uninstall-hook-libbex
