@@ -35,7 +35,7 @@ extern "C" {
 #define LIBBEX_PATCH_VERSION   @LIBBEX_PATCH_VERSION@
 
 /* paths */
-#define LIBBEX_PATH_REPODIR	".bex"
+#define LIBBEX_DEFAULT_URI	"wss://api.bitfinex.com/ws/2"
 
 struct libbex_repo;
 struct libbex_domain;

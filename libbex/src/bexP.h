@@ -51,11 +51,32 @@ struct libbex_iter {
 				(itr)->p->next : (itr)->p->prev; \
 	} while(0)
 
+enum {
+	BEX_TYPE_STR,
+	BEX_TYPE_U64,
+	BEX_TYPE_S64,
+	BEX_TYPE_FLOAT
+};
+
+struct libbex_value {
+	char	*name;
+	int	type;
+
+	union {
+		char		*str;
+		uint64_t	u64;
+		int64_t		s64;
+		double		fl;
+	} data;
+
+	struct list_head	vals;
+};
 
 struct libbex_event {
 	int	refcount;
 	char	*name;
 
+	struct libbex_vallist	*vals;
 	struct list_head	events;		/* platform events list */
 };
 

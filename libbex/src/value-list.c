@@ -5,7 +5,11 @@ static void free_event(struct libbex_event *ev)
 	if (!ev)
 		return;
 
-	bex_unref_vallist(ev->vals);
+	while (!list_empty(&ev->vals)) {
+		struct libbex_value *va = list_entry(ev->vals.next,
+				                  struct libbex_vals, vals);
+		bex_event_remove_value(pl, va);
+	}
 	free(ev->name);
 	free(ev);
 }
@@ -29,11 +33,8 @@ struct libbex_event *bex_new_event(const char *name)
 	ev->name = strdup(name);
 	if (!ev->name)
 		goto err;
-	ev->vals = bex_new_vallist();
-	if (!ev->vals)
-		goto err;
-
 	INIT_LIST_HEAD(&ev->events);
+	INIT_LIST_HEAD(&ev->vals);
 	return ev;
 err:
 	free_event(ev);
@@ -80,7 +81,12 @@ int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va)
 {
 	if (!va || !ev)
 		return -EINVAL;
-	return bex_vallist_add(ev->vals, va);
+
+	bex_ref_value(va);
+	list_add_tail(&va->vals, &ev->vals);
+
+	DBG(EVENT, bex_debugobj(pl, "add value: %s", va->name));
+	return 0;
 }
 
 /**
@@ -90,22 +96,14 @@ int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va)
  *
  * Returns: 0 on success or negative number in case of error.
  */
-int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va)
+int bex_platform_remove_value(struct libbex_platform *pl, struct libbex_value *va)
 {
-	if (!va || !ev)
+	if (!pl || !ev)
 		return -EINVAL;
-	return bex_vallist_remove(ev->vals, va);
-}
 
-/**
- * bex_event_get_values
- * @ev: event
- *
- * Returns: values list
- */
-struct libbex_values *bex_event_get_values(struct libbex_platform *pl)
-{
-	if (!ev)
-		return NULL;
-	return ev->vals;
+	list_del(&va->vals);
+	INIT_LIST_HEAD(&va->vals);	/* otherwise EV still points to the list */
+
+	bex_unref_value(va);
+	return 0;
 }
