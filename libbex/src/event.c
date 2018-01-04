@@ -5,7 +5,7 @@ static void free_event(struct libbex_event *ev)
 	if (!ev)
 		return;
 
-	bex_unref_vallist(ev->vals);
+	bex_unref_array(ev->vals);
 	free(ev->name);
 	free(ev);
 }
@@ -29,7 +29,7 @@ struct libbex_event *bex_new_event(const char *name)
 	ev->name = strdup(name);
 	if (!ev->name)
 		goto err;
-	ev->vals = bex_new_vallist();
+	ev->vals = bex_new_array(3);
 	if (!ev->vals)
 		goto err;
 
@@ -70,7 +70,7 @@ void bex_unref_event(struct libbex_event *ev)
 
 
 /**
- * bex_platform_add_value:
+ * bex_event_add_value:
  * @ev: event
  * @va: value
  *
@@ -80,7 +80,7 @@ int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va)
 {
 	if (!va || !ev)
 		return -EINVAL;
-	return bex_vallist_add(ev->vals, va);
+	return bex_array_add(ev->vals, va);
 }
 
 /**
@@ -94,7 +94,7 @@ int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va)
 {
 	if (!va || !ev)
 		return -EINVAL;
-	return bex_vallist_remove(ev->vals, va);
+	return bex_array_remove(ev->vals, va);
 }
 
 /**
@@ -103,9 +103,52 @@ int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va)
  *
  * Returns: values list
  */
-struct libbex_values *bex_event_get_values(struct libbex_platform *pl)
+struct libbex_array *bex_event_get_values(struct libbex_event *ev)
 {
 	if (!ev)
 		return NULL;
 	return ev->vals;
+}
+
+/**
+ * bex_event_set_callback
+ * @ev: event
+ * @fn: callback function
+ *
+ * Returns: 0 or <0 on error
+ */
+int bex_event_set_callback(struct libbex_event *ev,
+		int (*fn)(struct libbex_platform *, struct libbex_event *, void *))
+{
+	if (!ev)
+		return NULL;
+	return ev->callback = fn
+}
+
+/**
+ * bex_event_set_data
+ * @ev: event
+ * @dt: data
+ *
+ * Returns: 0 or <0 on error
+ */
+int bex_event_set_data(struct libbex_event *ev, void *dt)
+{
+	if (!ev)
+		return NULL;
+	return ev->data = dt;
+}
+
+/**
+ *
+ * bex_event_get_data
+ * @ev: event
+ *
+ * Returns: 0 or <0 on error
+ */
+void *bex_event_get_data(struct libbex_event *ev)
+{
+	if (!ev)
+		return NULL;
+	return ev->data;
 }

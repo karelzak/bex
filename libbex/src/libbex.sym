@@ -11,12 +11,39 @@ global:
 	bex_new_event;
 	bex_ref_event;
 	bex_unref_event;
+	bex_event_add_value;
+	bex_event_remove_value;
+	bex_event_get_values;
+	bex_event_set_callback;
+	bex_event_set_data;
+	bex_event_get_data;
+
+	bex_new_array;
+	bex_ref_array;
+	bex_unref_array;
+	bex_array_add;
+	bex_array_remove;
+	bex_array_get;
+	bex_array_to_string;
+
+	bex_new_value;
+	bex_ref_value;
+	bex_unref_value;
+	bex_value_set_u64_data;
+	bex_new_value_u64;
+	bex_value_set_s64_data;
+	bex_new_value_s64;
+	bex_value_set_str_data;
+	bex_new_value_str;
 
 	bex_new_platform;
 	bex_ref_platform;
 	bex_unref_platform;
 	bex_platform_remove_event;
 	bex_platform_add_event;
+	bex_platform_connect;
+	bex_platform_send;
+	bex_platform_service;
 local:
 	*;
 };

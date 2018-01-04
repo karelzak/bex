@@ -6,6 +6,7 @@
 #include "debug.h"
 
 #include <libwebsockets.h>
+#include <stdio.h>
 
 #include "libbex.h"
 
@@ -59,6 +60,7 @@ enum {
 };
 
 struct libbex_value {
+	int	refcount;
 	char	*name;
 	int	type;
 
@@ -68,15 +70,25 @@ struct libbex_value {
 		int64_t		s64;
 		double		fl;
 	} data;
+};
 
-	struct list_head	vals;
+struct libbex_array {
+	int     refcount;
+
+	size_t	nitems;		/* number of items */
+	size_t	nalloc;		/* number of allocated items */
+
+	struct libbex_value	*items;
 };
 
 struct libbex_event {
 	int	refcount;
 	char	*name;
 
-	struct libbex_vallist	*vals;
+	int	(*callback)(struct libbex_platform *, struct libbex_event *, void *);
+	void	*data;
+
+	struct libbex_array	*vals;
 	struct list_head	events;		/* platform events list */
 };
 

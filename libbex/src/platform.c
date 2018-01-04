@@ -159,3 +159,84 @@ int bex_platform_remove_event(struct libbex_platform *pl, struct libbex_event *e
 	return 0;
 }
 
+
+/**
+ * bext_platform_next_event:
+ * @pl: platform
+ * @itr: iterator
+ * @ev: returns the next event
+ *
+ * Returns: 0 on success, negative number in case of error or 1 at the end of list.
+ */
+int bex_platform_next_event(struct libbex_platform *pl, struct libbex_iter *itr, struct libbex_event **ev)
+{
+	int rc = 1;
+
+	if (!pl || !itr || !ev)
+		return -EINVAL;
+	*ev = NULL;
+
+	if (!itr->head)
+		BEX_ITER_INIT(itr, &pl->ents);
+	if (itr->p != itr->head) {
+		BEX_ITER_ITERATE(itr, *ev, struct libbex_event, events);
+		rc = 0;
+	}
+
+	return rc;
+}
+
+struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const char *name)
+{
+	struct libbex_event *ev;
+	struct libbex_iter itr;
+
+	bex_reset_iter(&itr, BEX_ITER_FORWARD);
+
+	while (bex_platform_next_event(tb, &itr, &ev) == 0) {
+		if (strcmp(ev->name, name) == 0)
+			return ev;
+	}
+
+	return NULL;
+}
+
+int bex_platform_emit_event(struct libbex_platform *pl, const char *name)
+{
+	struct libbex_event *ev = bex_platform_get_event(pl, name);
+	int rc'
+
+	if (ev)
+		return -EINVAL;
+
+	/* convert to JSON string */
+	str = bex_array_to_string(ev->vals, "event", ev->name);
+	if (!str)
+		return -EINVAL;
+
+	rc = bex_platform_send(pl, str);
+
+	free(str);
+	return rc;
+}
+
+int bex_platform_connect(struct libbex_platform *pl)
+{
+	DBG(PLAT, bex_debugobj(pl, "connecting", str));
+	return -ENOSYS;
+}
+
+int bex_platform_send(struct libbex_platform *pl, const char *str)
+{
+	DBG(PLAT, bex_debugobj(pl, "sending: >>>%s<<<", str));
+	return -ENOSYS;
+}
+
+int bex_platform_service(struct libbex_platform *pl)
+{
+	DBG(PLAT, bex_debugobj(pl, "serving", str));
+	return -ENOSYS;
+}
+
+
+

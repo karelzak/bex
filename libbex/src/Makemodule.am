@@ -11,6 +11,8 @@ libbex_la_SOURCES = \
 	libbex/src/version.c \
 	libbex/src/event.c \
 	libbex/src/platform.c \
+	libbex/src/value.c \
+	libbex/src/array.c \
 	$(nodist_bexinc_HEADERS)
 
 nodist_libbex_la_SOURCES = libbex/src/bexP.h
