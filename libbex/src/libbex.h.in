@@ -111,6 +111,7 @@ extern struct libbex_platform *bex_new_platform(const char *uri);
 extern void bex_ref_platform(struct libbex_platform *pl);
 extern void bex_unref_platform(struct libbex_platform *pl);
 extern int bex_platform_remove_event(struct libbex_platform *pl, struct libbex_event *ex);
+extern int bex_platform_add_event(struct libbex_platform *pl, struct libbex_event *ev);
 
 #ifdef __cplusplus
 }

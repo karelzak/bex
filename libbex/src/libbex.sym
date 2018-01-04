@@ -7,6 +7,16 @@ global:
 
 	bex_get_library_version;
 	bex_parse_version_string;
+
+	bex_new_event;
+	bex_ref_event;
+	bex_unref_event;
+
+	bex_new_platform;
+	bex_ref_platform;
+	bex_unref_platform;
+	bex_platform_remove_event;
+	bex_platform_add_event;
 local:
 	*;
 };

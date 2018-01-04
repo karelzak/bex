@@ -112,6 +112,28 @@ void bex_unref_platform(struct libbex_platform *pl)
 	}
 }
 
+/**
+ * bex_platform_add_event:
+ * @pl: tab pointer
+ * @ev: event
+ *
+ * Adds a new event to platform and increment @ev reference counter. Don't forget to
+ * use bex_unref_event() after bex_platform_add_event() you want to keep the @ev
+ * referenced by the platform only.
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_platform_add_event(struct libbex_platform *pl, struct libbex_event *ev)
+{
+	if (!pl || !ev)
+		return -EINVAL;
+
+	bex_ref_event(ev);
+	list_add_tail(&ev->events, &pl->events);
+
+	DBG(PLAT, bex_debugobj(pl, "add event: %s", ev->name));
+	return 0;
+}
 
 /**
  * bex_platform_remove_event:

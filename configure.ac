@@ -1,6 +1,6 @@
 AC_INIT([bex],
 	[0.1],
-	[kzak@redhat.com],,
+	[karel.zak.007@gmail.com],,
 	[bex])
 
 
