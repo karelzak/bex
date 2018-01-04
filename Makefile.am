@@ -1,0 +1,8 @@
+
+BEX_LDADD = $(LDADD) $(WEBSOCKETS_LIBS)
+BEX_CFLAGS = $(AM_CFLAGS) $(WEBSOCKETS_CFLAGS)
+
+bin_PROGRAMS = bex-fetch
+bex_fetch_SOURCES=fetch.c
+bex_fetch_LDADD = $(BEX_LDADD)
+bex_fetch_CFLAGS = $(BEX_CFLAGS)
