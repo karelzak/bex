@@ -58,7 +58,7 @@ EXTRA_DIST += \
 	po/update-potfiles
 
 
-#include include/Makemodule.am
+include include/Makemodule.am
 #include libbex/Makemodule.am
 include src/Makemodule.am
 

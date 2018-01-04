@@ -1,0 +1,8 @@
+
+dist_noinst_HEADERS += \
+	include/list.h \
+	include/c.h \
+	include/debug.h \
+	include/xalloc.h \
+	include/strutils.h \
+	include/nls.h
