@@ -13,6 +13,7 @@ libbex_la_SOURCES = \
 	libbex/src/platform.c \
 	libbex/src/value.c \
 	libbex/src/array.c \
+	libbex/src/wss.c \
 	$(nodist_bexinc_HEADERS)
 
 nodist_libbex_la_SOURCES = libbex/src/bexP.h

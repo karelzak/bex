@@ -42,6 +42,7 @@ global:
 	bex_platform_remove_event;
 	bex_platform_add_event;
 	bex_platform_connect;
+	bex_platform_disconnect;
 	bex_platform_send;
 	bex_platform_service;
 	bex_platform_emit_event;

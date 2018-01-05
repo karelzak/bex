@@ -5,7 +5,6 @@
 #include "list.h"
 #include "debug.h"
 
-#include <libwebsockets.h>
 #include <stdio.h>
 
 #include "libbex.h"
@@ -104,10 +103,19 @@ struct libbex_platform {
 	int	uri_port;
 	int	uri_ssl;
 
-	struct list_head	events;
+	void	*wss;			/* connection */
+	unsigned int	connection_attempts;
+	unsigned int	reconnect_timeout;	/* ms */
+	unsigned int	service_timeout;
 
+	struct list_head	events;
 };
 
+/* wss.c */
+extern int wss_is_connected(struct libbex_platform *pl);
+extern int wss_connect(struct libbex_platform *pl);
+extern int wss_disconnect(struct libbex_platform *pl);
+extern int wss_service(struct libbex_platform *pl);
 
 #endif /* _LIBBEX_PRIVATE_H */
 

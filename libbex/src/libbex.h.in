@@ -141,6 +141,7 @@ extern int bex_platform_next_event(struct libbex_platform *pl, struct libbex_ite
 extern struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const char *name);
 extern int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_connect(struct libbex_platform *pl);
+extern int bex_platform_disconnect(struct libbex_platform *pl);
 extern int bex_platform_send(struct libbex_platform *pl, const char *str);
 extern int bex_platform_service(struct libbex_platform *pl);
 

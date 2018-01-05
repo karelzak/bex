@@ -1,6 +1,8 @@
 
 #include "bexP.h"
 
+#include <libwebsockets.h>
+
 static void free_platform(struct libbex_platform *pl)
 {
 	if (!pl)
@@ -42,6 +44,9 @@ struct libbex_platform *bex_new_platform(const char *uri)
 	if (!(_uri = strdup(uri)))
 		goto err;
 
+	pl->service_timeout = 250;
+	pl->reconnect_timeout = 50;
+	pl->connection_attempts = 5;
 	pl->uri_port = 443;
 
 	if (lws_parse_uri(_uri, &prot, &addr, &pl->uri_port, &p))
@@ -228,7 +233,19 @@ int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev)
 int bex_platform_connect(struct libbex_platform *pl)
 {
 	DBG(PLAT, bex_debugobj(pl, "connecting"));
-	return -ENOSYS;
+	return wss_connect(pl);;
+}
+
+int bex_platform_disconnect(struct libbex_platform *pl)
+{
+	DBG(PLAT, bex_debugobj(pl, "connecting"));
+	return wss_disconnect(pl);;
+}
+
+int bex_platform_service(struct libbex_platform *pl)
+{
+	DBG(PLAT, bex_debugobj(pl, "serving"));
+	return wss_service(pl);
 }
 
 int bex_platform_send(struct libbex_platform *pl, const char *str)
@@ -237,11 +254,6 @@ int bex_platform_send(struct libbex_platform *pl, const char *str)
 	return -ENOSYS;
 }
 
-int bex_platform_service(struct libbex_platform *pl)
-{
-	DBG(PLAT, bex_debugobj(pl, "serving"));
-	return -ENOSYS;
-}
 
 
 
