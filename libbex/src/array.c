@@ -8,6 +8,7 @@ static void free_array(struct libbex_array *ar)
 	if (!ar)
 		return;
 
+	DBG(ARY, bex_debugobj(ar, "free"));
 	for (i = 0; i < ar->nitems; i++)
 		bex_unref_value(ar->items[i]);
 
@@ -30,6 +31,7 @@ struct libbex_array *bex_new_array(size_t sz)
 	if (!ar)
 		goto err;
 
+	DBG(ARY, bex_debugobj(ar, "alloc"));
 	ar->refcount = 1;
 	ar->items = calloc(sz, sizeof(struct libbex_value *));
 	if (!ar->items)
@@ -83,7 +85,7 @@ int bex_array_add(struct libbex_array *ar, struct libbex_value *va)
 		return -EINVAL;
 
 	if (ar->nitems + 1 >= ar->nalloc) {
-		tmp = realloc(ar->items, ar->nalloc + 1);
+		void *tmp = realloc(ar->items, ar->nalloc + 1);
 		if (!tmp)
 			return -ENOMEM;
 		ar->items = tmp;
@@ -94,7 +96,7 @@ int bex_array_add(struct libbex_array *ar, struct libbex_value *va)
 	ar->items[ar->nitems] = va;
 	ar->nitems++;
 
-	DBG(ARY, bex_debugobj(ar, "add value: %s", va->name));
+	DBG(ARY, bex_debugobj(ar, "add value: %s [%p]", va->name, va));
 	return 0;
 }
 
@@ -115,8 +117,9 @@ int bex_array_remove(struct libbex_array *ar, struct libbex_value *va)
 	for (i = 0; i < ar->nitems; i++) {
 		if (ar->items[i] == va) {
 			if (i < ar->nitems - 1)
-				memmove(ar->items[i], ar->items[i+1], ar->nitems - i - 1));
+				memmove(ar->items[i], ar->items[i+1], ar->nitems - i - 1);
 			ar->nitems--;
+			DBG(ARY, bex_debugobj(ar, "remove value: %s [%p]", va->name, va));
 			bex_unref_value(va);
 			return 0;
 		}
@@ -135,13 +138,12 @@ int bex_array_remove(struct libbex_array *ar, struct libbex_value *va)
 struct libbex_value *bex_array_get(struct libbex_array *ar, const char *name)
 {
 	size_t i;
-	struct libbex_value *va;
 
 	if (!ar || !name)
 		return NULL;
 
 	for (i = 0; i < ar->nitems; i++) {
-		if (strcmp(ar->items[i].name, name) == 0) {
+		if (strcmp(ar->items[i]->name, name) == 0) {
 			return ar->items[i];
 		}
 	}
@@ -152,17 +154,17 @@ struct libbex_value *bex_array_get(struct libbex_array *ar, const char *name)
 char *bex_array_to_string(struct libbex_array *ar, const char *first, const char *firstval)
 {
 	size_t i, sz = 0;
-	struct libbex_value *va;
 	FILE *stream;
-	char **res = NULL;
+	char *res = NULL;
 
 	if (!ar)
 		return NULL;
 
-	stream = open_memstream(data, &sz);
+	stream = open_memstream(&res, &sz);
 	if (!stream)
 		return NULL;
 
+	DBG(ARY, bex_debugobj(ar, "converting to string"));
 	fputs("{ ", stream);
 
 	if (first)
@@ -189,7 +191,7 @@ char *bex_array_to_string(struct libbex_array *ar, const char *first, const char
 		}
 	}
 
-	fputs("}", stream);
+	fputs(" }", stream);
 	fclose(stream);
 	return res;
 }

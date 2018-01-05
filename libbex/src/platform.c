@@ -6,6 +6,7 @@ static void free_platform(struct libbex_platform *pl)
 	if (!pl)
 		return;
 
+	DBG(PLAT, bex_debugobj(pl, "free"));
 	while (!list_empty(&pl->events)) {
 		struct libbex_event *ev = list_entry(pl->events.next,
 				                  struct libbex_event, events);
@@ -35,10 +36,10 @@ struct libbex_platform *bex_new_platform(const char *uri)
 
 	if (!pl)
 		goto err;
-
+	DBG(PLAT, bex_debugobj(pl, "alloc"));
 
 	/* libwebsocket modifies URI */
-	if ((_uri = strdup(uri)))
+	if (!(_uri = strdup(uri)))
 		goto err;
 
 	pl->uri_port = 443;
@@ -72,7 +73,7 @@ struct libbex_platform *bex_new_platform(const char *uri)
 	pl->refcount = 1;
 	INIT_LIST_HEAD(&pl->events);
 
-	DBG(PLAT, bex_debugobj("protocol=%s, address=%s, port=%d, path=%s [SSL=%s]",
+	DBG(PLAT, bex_debugobj(pl, "protocol=%s, address=%s, port=%d, path=%s [SSL=%s]",
 				pl->uri_prot, pl->uri_addr,
 				pl->uri_port, pl->uri_path,
 				pl->uri_ssl ? "YES" : "NO"));
@@ -131,7 +132,7 @@ int bex_platform_add_event(struct libbex_platform *pl, struct libbex_event *ev)
 	bex_ref_event(ev);
 	list_add_tail(&ev->events, &pl->events);
 
-	DBG(PLAT, bex_debugobj(pl, "add event: %s", ev->name));
+	DBG(PLAT, bex_debugobj(pl, "add event: %s [%p]", ev->name, ev));
 	return 0;
 }
 
@@ -151,6 +152,8 @@ int bex_platform_remove_event(struct libbex_platform *pl, struct libbex_event *e
 {
 	if (!pl || !ev)
 		return -EINVAL;
+
+	DBG(PLAT, bex_debugobj(pl, "removing event %s [%p]", ev->name, ev));
 
 	list_del(&ev->events);
 	INIT_LIST_HEAD(&ev->events);	/* otherwise EV still points to the list */
@@ -177,7 +180,7 @@ int bex_platform_next_event(struct libbex_platform *pl, struct libbex_iter *itr,
 	*ev = NULL;
 
 	if (!itr->head)
-		BEX_ITER_INIT(itr, &pl->ents);
+		BEX_ITER_INIT(itr, &pl->events);
 	if (itr->p != itr->head) {
 		BEX_ITER_ITERATE(itr, *ev, struct libbex_event, events);
 		rc = 0;
@@ -193,7 +196,7 @@ struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const ch
 
 	bex_reset_iter(&itr, BEX_ITER_FORWARD);
 
-	while (bex_platform_next_event(tb, &itr, &ev) == 0) {
+	while (bex_platform_next_event(pl, &itr, &ev) == 0) {
 		if (strcmp(ev->name, name) == 0)
 			return ev;
 	}
@@ -201,13 +204,15 @@ struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const ch
 	return NULL;
 }
 
-int bex_platform_emit_event(struct libbex_platform *pl, const char *name)
+int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev)
 {
-	struct libbex_event *ev = bex_platform_get_event(pl, name);
-	int rc'
+	int rc;
+	char *str;
 
-	if (ev)
+	if (!ev || !pl)
 		return -EINVAL;
+
+	DBG(PLAT, bex_debugobj(pl, "emitting event %s [%p]", ev->name, ev));
 
 	/* convert to JSON string */
 	str = bex_array_to_string(ev->vals, "event", ev->name);
@@ -222,7 +227,7 @@ int bex_platform_emit_event(struct libbex_platform *pl, const char *name)
 
 int bex_platform_connect(struct libbex_platform *pl)
 {
-	DBG(PLAT, bex_debugobj(pl, "connecting", str));
+	DBG(PLAT, bex_debugobj(pl, "connecting"));
 	return -ENOSYS;
 }
 
@@ -234,7 +239,7 @@ int bex_platform_send(struct libbex_platform *pl, const char *str)
 
 int bex_platform_service(struct libbex_platform *pl)
 {
-	DBG(PLAT, bex_debugobj(pl, "serving", str));
+	DBG(PLAT, bex_debugobj(pl, "serving"));
 	return -ENOSYS;
 }
 

@@ -17,6 +17,9 @@
 #define BEX_DEBUG_INIT		(1 << 1)
 #define BEX_DEBUG_WSS		(1 << 2)
 #define BEX_DEBUG_PLAT		(1 << 3)
+#define BEX_DEBUG_ARY		(1 << 4)
+#define BEX_DEBUG_VAL		(1 << 5)
+#define BEX_DEBUG_EVENT		(1 << 6)
 
 #define BEX_DEBUG_ALL		0xFFFF
 
@@ -78,14 +81,14 @@ struct libbex_array {
 	size_t	nitems;		/* number of items */
 	size_t	nalloc;		/* number of allocated items */
 
-	struct libbex_value	*items;
+	struct libbex_value	**items;
 };
 
 struct libbex_event {
 	int	refcount;
 	char	*name;
 
-	int	(*callback)(struct libbex_platform *, struct libbex_event *, void *);
+	int	(*callback)(struct libbex_platform *, struct libbex_event *);
 	void	*data;
 
 	struct libbex_array	*vals;

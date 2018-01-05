@@ -60,3 +60,4 @@ libbex/src/libbex.h
 # binaries
 #
 bex-fetch
+bex-ping

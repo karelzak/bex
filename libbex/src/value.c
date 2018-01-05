@@ -37,7 +37,6 @@ struct libbex_value *bex_new_value(const char *name)
 	va->name = strdup(name);
 	if (!va->name)
 		goto err;
-	INIT_LIST_HEAD(&va->values);
 	return va;
 err:
 	free_value(va);
@@ -85,7 +84,7 @@ struct libbex_value *bex_new_value_u64(const char *name, uint64_t n)
 {
 	struct libbex_value *va = bex_new_value(name);
 	if (va)
-		bex_value_set_u64_data(vl, n);
+		bex_value_set_u64_data(va, n);
 	return va;
 }
 
@@ -101,7 +100,7 @@ struct libbex_value *bex_new_value_s64(const char *name, int64_t n)
 {
 	struct libbex_value *va = bex_new_value(name);
 	if (va)
-		bex_value_set_s64_data(vl, n);
+		bex_value_set_s64_data(va, n);
 	return va;
 }
 
@@ -116,7 +115,7 @@ struct libbex_value *bex_new_value_str(const char *name, const char *str)
 {
 	struct libbex_value *va = bex_new_value(name);
 	if (va)
-		bex_value_set_str_data(vl, str);
+		bex_value_set_str_data(va, str);
 	return va;
 }
 

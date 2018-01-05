@@ -5,6 +5,7 @@ static void free_event(struct libbex_event *ev)
 	if (!ev)
 		return;
 
+	DBG(EVENT, bex_debugobj(ev, "free [name=%s]", ev->name));
 	bex_unref_array(ev->vals);
 	free(ev->name);
 	free(ev);
@@ -25,6 +26,7 @@ struct libbex_event *bex_new_event(const char *name)
 	if (!ev)
 		goto err;
 
+	DBG(EVENT, bex_debugobj(ev, "alloc [name=%s]", name));
 	ev->refcount = 1;
 	ev->name = strdup(name);
 	if (!ev->name)
@@ -80,6 +82,8 @@ int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va)
 {
 	if (!va || !ev)
 		return -EINVAL;
+
+	DBG(EVENT, bex_debugobj(ev, "add value %s [%p]", va->name, va));
 	return bex_array_add(ev->vals, va);
 }
 
@@ -94,6 +98,8 @@ int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va)
 {
 	if (!va || !ev)
 		return -EINVAL;
+
+	DBG(EVENT, bex_debugobj(ev, "remove value %s [%p]", va->name, va));
 	return bex_array_remove(ev->vals, va);
 }
 
@@ -111,18 +117,19 @@ struct libbex_array *bex_event_get_values(struct libbex_event *ev)
 }
 
 /**
- * bex_event_set_callback
+ * bex_event_set_receive_callback
  * @ev: event
  * @fn: callback function
  *
  * Returns: 0 or <0 on error
  */
-int bex_event_set_callback(struct libbex_event *ev,
-		int (*fn)(struct libbex_platform *, struct libbex_event *, void *))
+int bex_event_set_receive_callback(struct libbex_event *ev,
+		int (*fn)(struct libbex_platform *, struct libbex_event *))
 {
 	if (!ev)
-		return NULL;
-	return ev->callback = fn
+		return -EINVAL;
+	ev->callback = fn;
+	return 0;
 }
 
 /**
@@ -135,8 +142,9 @@ int bex_event_set_callback(struct libbex_event *ev,
 int bex_event_set_data(struct libbex_event *ev, void *dt)
 {
 	if (!ev)
-		return NULL;
-	return ev->data = dt;
+		return -EINVAL;
+	ev->data = dt;
+	return 0;
 }
 
 /**

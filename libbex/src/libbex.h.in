@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 #include <stdio.h>
-#include <mntent.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 #define LIBBEX_VERSION   "@LIBBEX_VERSION@"
@@ -78,6 +78,24 @@ struct libbex_event;
  */
 struct libbex_platform;
 
+/**
+ * libbex_value
+ *
+ */
+struct libbex_value;
+
+/**
+ * libbex_array
+ *
+ */
+struct libbex_array;
+
+/**
+ * libbex_event
+ *
+ */
+struct libbex_event;
+
 
 /* init.c */
 extern void bex_init_debug(int mask);
@@ -108,8 +126,8 @@ extern void bex_unref_event(struct libbex_event *ev);
 extern int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va);
 extern int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va);
 extern struct libbex_array *bex_event_get_values(struct libbex_event *ev);
-extern int bex_event_set_callback(struct libbex_event *ev,
-                int (*fn)(struct libbex_platform *, struct libbex_event *, void *));
+extern int bex_event_set_receive_callback(struct libbex_event *ev,
+                int (*fn)(struct libbex_platform *, struct libbex_event *));
 extern int bex_event_set_data(struct libbex_event *ev, void *dt);
 extern void *bex_event_get_data(struct libbex_event *ev);
 
@@ -119,9 +137,13 @@ extern void bex_ref_platform(struct libbex_platform *pl);
 extern void bex_unref_platform(struct libbex_platform *pl);
 extern int bex_platform_remove_event(struct libbex_platform *pl, struct libbex_event *ex);
 extern int bex_platform_add_event(struct libbex_platform *pl, struct libbex_event *ev);
+extern int bex_platform_next_event(struct libbex_platform *pl, struct libbex_iter *itr, struct libbex_event **ev);
+extern struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const char *name);
+extern int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_connect(struct libbex_platform *pl);
 extern int bex_platform_send(struct libbex_platform *pl, const char *str);
 extern int bex_platform_service(struct libbex_platform *pl);
+
 
 /* array.c */
 extern struct libbex_array *bex_new_array(size_t sz);

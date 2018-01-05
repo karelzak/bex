@@ -1,7 +1,16 @@
-bin_PROGRAMS += bex-fetch
+BEX_LDADD = $(LDADD) libbex.la
+BEX_CFLAGS = $(AM_CFLAGS) -I$(libbex_incdir)
+BEX_LDFLAGS = $(AM_LDFLAGS)
+
+bin_PROGRAMS += bex-fetch bex-ping
 
 bex_fetch_SOURCES = src/fetch.c
+bex_fetch_LDADD = $(BEX_LDADD)
+bex_fetch_CFLAGS = $(BEX_CFLAGS)
+bex_fetch_LDFLAGS = $(BEX_LDFLAGS)
 
-bex_fetch_LDADD = $(LDADD) libbex.la
-bex_fetch_CFLAGS = $(AM_CFLAGS) -I$(libbex_incdir)
-bex_fetch_LDFLAGS = $(AM_LDFLAGS) $(WEBSOCKETS_CFLAGS)
+bex_ping_SOURCES = src/ping.c
+bex_ping_LDADD = $(BEX_LDADD)
+bex_ping_CFLAGS = $(BEX_CFLAGS)
+bex_ping_LDFLAGS = $(BEX_LDFLAGS)
+

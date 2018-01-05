@@ -10,6 +10,12 @@
 #include "nls.h"
 #include "xalloc.h"
 
+static int pong_callback(struct libbex_platform *pl, struct libbex_event *ev)
+{
+	printf("get pong event");
+	return 0;
+}
+
 static void __attribute__((__noreturn__)) usage(void)
 {
 	fputs(USAGE_HEADER, stdout);
@@ -30,7 +36,7 @@ int main(int argc, char **argv)
 	int c;
 	const char *uri = LIBBEX_DEFAULT_URI;
 	struct libbex_platform *pl;
-	struct libbex_event *ev;
+	struct libbex_event *ping, *ev;
 
 	static const struct option longopts[] = {
 		{ "help",	no_argument,		0, 'h' },
@@ -57,22 +63,24 @@ int main(int argc, char **argv)
 
 	pl = bex_new_platform(uri);
 	if (!pl)
-		err(EXIT_FAILURE, _("failed to create platform instance for %s", uri);
-
-	ev = bex_new_event("ping");
-	bex_event_add_value(ev, bex_new_u64_value("cid", 123));
-	bex_platform_add_event(pl, ev);
-	bex_unref_event(ev);
+		err(EXIT_FAILURE, _("failed to create platform instance for %s"), uri);
 
 	ev = bex_new_event("pong");
-	bex_event_add_callback(ev, pong_callback);
+	bex_event_set_receive_callback(ev, pong_callback);
 	bex_platform_add_event(pl, ev);
 	bex_unref_event(ev);
+
+	/* send only; don't have to be added */
+	ping = bex_new_event("ping");
+	bex_event_add_value(ping, bex_new_value_u64("cid", 123));
 
 	bex_platform_connect(pl);
 
-	bex_platform_emit_event(pl, "ping");
+	bex_platform_emit_event(pl, ping);
 	bex_platform_service(pl);
+
+	bex_unref_event(ping);
+	bex_unref_platform(pl);
 
 	return EXIT_SUCCESS;
 }
