@@ -211,22 +211,37 @@ struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const ch
 
 int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev)
 {
-	int rc;
+	int rc = 0;
+	size_t sz = 0;
 	char *str;
+	FILE *stream;
 
 	if (!ev || !pl)
 		return -EINVAL;
 
 	DBG(PLAT, bex_debugobj(pl, "emitting event %s [%p]", ev->name, ev));
 
+	stream = open_memstream(&str, &sz);
+	if (!stream)
+		return -errno;
+
 	/* convert to JSON string */
-	str = bex_array_to_string(ev->vals, "event", ev->name);
-	if (!str)
-		return -EINVAL;
+	fputs("{ ", stream);
+	fprintf(stream, "\"event\": \"%s\"", ev->name);
 
-	rc = bex_platform_send(pl, str);
+	if (!bex_array_is_empty(ev->vals)) {
+		fputs(", ", stream);
+		rc = bex_array_to_stream(ev->vals, stream);
+	}
 
-	free(str);
+	fputs(" }", stream);
+        fclose(stream);
+
+	if (!rc)
+		rc = bex_platform_send(pl, (unsigned char *) str, sz);
+	if (rc)
+		free(str);	/* free on error */
+
 	return rc;
 }
 
@@ -248,10 +263,14 @@ int bex_platform_service(struct libbex_platform *pl)
 	return wss_service(pl);
 }
 
-int bex_platform_send(struct libbex_platform *pl, const char *str)
+/*
+ * Note that @str has to be mallocated string and will be later freed by
+ * platform. Don't call free() for the @str on success!
+ */
+int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz)
 {
-	DBG(PLAT, bex_debugobj(pl, "sending: >>>%s<<<", str));
-	return -ENOSYS;
+	DBG(PLAT, bex_debugobj(pl, "sending: [sz=%zu] >>>%s<<<", sz, str));
+	return wss_send(pl, str, sz);
 }
 
 

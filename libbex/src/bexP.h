@@ -110,12 +110,13 @@ struct libbex_platform {
 
 	struct list_head	events;
 };
-
+;
 /* wss.c */
 extern int wss_is_connected(struct libbex_platform *pl);
 extern int wss_connect(struct libbex_platform *pl);
 extern int wss_disconnect(struct libbex_platform *pl);
 extern int wss_service(struct libbex_platform *pl);
+extern int wss_send(struct libbex_platform *pl, unsigned char *str, size_t sz);
 
 #endif /* _LIBBEX_PRIVATE_H */
 

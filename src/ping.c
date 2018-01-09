@@ -77,7 +77,9 @@ int main(int argc, char **argv)
 	bex_platform_connect(pl);
 
 	bex_platform_emit_event(pl, ping);
-	bex_platform_service(pl);
+
+	while (1)
+		bex_platform_service(pl);
 
 	bex_unref_event(ping);
 	bex_unref_platform(pl);

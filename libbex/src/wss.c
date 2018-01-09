@@ -2,61 +2,70 @@
 #include "bexP.h"
 #include <libwebsockets.h>
 
-#define  SESSION_DATASZ	150
+#define wss_count_bufsiz(x)		(LWS_SEND_BUFFER_PRE_PADDING + x + LWS_SEND_BUFFER_POST_PADDING)
+#define BEX_WSS_MINBUFSIZ		wss_count_bufsiz(125)
 
-
-struct wss_data {
-
+struct wss_ctl {
 	struct lws_context	*context;
 	struct lws		*wsi;
 	struct libbex_platform  *pl;
+
+	struct list_head	pending_data;
+	struct list_head	free_data;
+	unsigned char		*buf;
+	size_t			bufsz;
+
+	unsigned int		established : 1;
 };
 
-static struct wss_data *__wss;	/* TODO! */
+struct wss_iovec {
+	unsigned char	*buf;
+	size_t		sz;
 
-static int wss_callback(struct lws *wsi, enum lws_callback_reasons reason,
+	struct list_head	vects;
+};
+
+static int wss_write(struct wss_ctl *wss);
+
+static int wss_callback(struct lws *wsi,
+			enum lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
-	struct wss_data *wss = __wss;
-	struct libbex_platform  *pl;
+	struct wss_ctl *wss = (struct wss_ctl *) user;
 
-	pl = (struct libbex_platform *) wss->pl;
-	if (!pl) {
-		DBG(WSS, bex_debug("CALLBACK: no platform pointer"));
-		return 0;
-	}
 
 	switch (reason) {
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		DBG(WSS, bex_debugobj(wss, "CALLBACK: client extablished"));
-		lws_callback_on_writable(wss->wsi);
+		DBG(WSS, bex_debug("CALLBACK: client extablished"));
+		if (wss)
+			wss->established = 1;
+		lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-		DBG(WSS, bex_debugobj(wss, "CALLBACK: client incomming data"));
+		DBG(WSS, bex_debug("CALLBACK: client incomming data"));
 		printf("data: >>%s<<\n", (char *)in);
 		break;
 
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
-	{
-		DBG(WSS, bex_debugobj(wss, "CALLBACK: client writeable"));
-
-		unsigned char buf[LWS_SEND_BUFFER_PRE_PADDING + 100 + LWS_SEND_BUFFER_POST_PADDING];
-		unsigned char *p = &buf[LWS_SEND_BUFFER_PRE_PADDING];
-
-		size_t n = sprintf((char *)p, "{\"event\":\"ping\", \"cid\": 1234 }");
-		lws_write(wss->wsi, p, n, LWS_WRITE_TEXT );
+		DBG(WSS, bex_debug("CALLBACK: client writeable"));
+		if (!user) {
+			DBG(WSS, bex_debug(" no user data; ignore"));
+			return 0;
+		}
+		wss_write(user);
 		break;
-	}
 
 	case LWS_CALLBACK_CLOSED:
-		DBG(WSS, bex_debugobj(wss, "CALLBACK: close"));
-		wss->wsi = NULL;
+		DBG(WSS, bex_debug("CALLBACK: close"));
+		if (wss)
+			wss->established = 0;
 		break;
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		DBG(WSS, bex_debugobj(wss, "CALLBACK: connection error %s", in ? (char *) in : ""));
-		wss->wsi = NULL;
+		DBG(WSS, bex_debug("CALLBACK: connection error %s", in ? (char *) in : ""));
+		if (wss)
+			wss->established = 0;
 		break;
 
 	default:
@@ -68,7 +77,7 @@ static int wss_callback(struct lws *wsi, enum lws_callback_reasons reason,
 
 int wss_is_connected(struct libbex_platform *pl)
 {
-	return pl && pl->wss && ((struct wss_data *) pl->wss)->wsi;
+	return pl && pl->wss && ((struct wss_ctl *) pl->wss)->wsi;
 }
 
 static const struct lws_protocols __wss_protocols[] =
@@ -76,7 +85,6 @@ static const struct lws_protocols __wss_protocols[] =
 	{
 		.name = "",
 		.callback = wss_callback,
-		.per_session_data_size = 0,
 		.rx_buffer_size = 4024
 	},
 	{ NULL, NULL, 0, 0 } /* end */
@@ -84,21 +92,28 @@ static const struct lws_protocols __wss_protocols[] =
 
 int wss_connect(struct libbex_platform *pl)
 {
-	struct wss_data *wss;
+	struct wss_ctl *wss = NULL;
         struct lws_client_connect_info cinfo;
 	unsigned int try;
 
 	if (!pl)
 		return -EINVAL;
 
-	wss = (struct wss_data *) pl->wss;
+	DBG(WSS, bex_debug("connect"));
+
+	wss = (struct wss_ctl *) pl->wss;
 	if (!wss) {
 	        struct lws_context_creation_info info;
 
-		__wss = wss = calloc(1, sizeof(struct wss_data));
+		lws_set_log_level(LLL_ERR|LLL_WARN|LLL_NOTICE|LLL_INFO|LLL_DEBUG|LLL_PARSER|LLL_HEADER|LLL_CLIENT, NULL);
+
+		wss = calloc(1, sizeof(struct wss_ctl));
 		if (!wss)
 			return -ENOMEM;
 		DBG(WSS, bex_debugobj(wss, "alloc"));
+		wss->pl = pl;
+		INIT_LIST_HEAD(&wss->pending_data);
+		INIT_LIST_HEAD(&wss->free_data);
 
 		memset(&info, 0, sizeof info);
 		info.port = CONTEXT_PORT_NO_LISTEN;
@@ -113,7 +128,6 @@ int wss_connect(struct libbex_platform *pl)
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 #endif
 		DBG(WSS, bex_debugobj(wss, "create context"));
-		wss->pl = pl;
 		wss->context = lws_create_context(&info);
 		if (!wss->context) {
 			DBG(WSS, bex_debugobj(wss, "failed to create a context"));
@@ -139,6 +153,7 @@ int wss_connect(struct libbex_platform *pl)
 	cinfo.origin = pl->uri_addr;
 	cinfo.ietf_version_or_minus_one = -1;
 	cinfo.protocol = "";
+	cinfo.userdata = wss;
 
 	for (try = 0; try < pl->connection_attempts; try++) {
 		DBG(WSS, bex_debugobj(wss, "#%u connecting...", try));
@@ -151,18 +166,22 @@ int wss_connect(struct libbex_platform *pl)
 		}
 	}
 
+	/* wait to fully initialize connection */
+	while (!wss->established)
+		lws_service(wss->context, 50);
+
 	DBG(WSS, bex_debugobj(wss, "... done [%s]", wss->wsi ?  "CONNECTED" : "FAILED"));
 	return wss->wsi ? 0 : -1;
 }
 
 int wss_disconnect(struct libbex_platform *pl)
 {
-	struct wss_data *wss;
+	struct wss_ctl *wss;
 
 	if (!pl || !pl->wss)
 		return -EINVAL;
 
-	wss = (struct wss_data *) pl->wss;
+	wss = (struct wss_ctl *) pl->wss;
 
 	if (wss->wsi) {
 		DBG(WSS, bex_debugobj(wss, "close connection"));
@@ -175,22 +194,108 @@ int wss_disconnect(struct libbex_platform *pl)
 	DBG(WSS, bex_debugobj(wss, "free"));
 	free(wss);
 	pl->wss = NULL;
-	__wss = NULL;
 	return 0;
 }
 
 int wss_service(struct libbex_platform *pl)
 {
-	struct wss_data *wss;
+	struct wss_ctl *wss;
 
 	if (!pl || !pl->wss)
 		return -EINVAL;
 
-	wss = (struct wss_data *) pl->wss;
+	wss = (struct wss_ctl *) pl->wss;
 
-	DBG(WSS, bex_debugobj(wss, "service"));
-	lws_service(wss->context, pl->service_timeout);
+	DBG(WSS, bex_debugobj(wss, "service [timeout=%d]", pl->service_timeout));
+	if (!wss->established) {
+		wss->wsi = NULL;
+		wss_connect(pl);
+	}
+	if (!wss->wsi)
+		DBG(WSS, bex_debugobj(wss, "no connection"));
+	else
+		lws_service(wss->context, pl->service_timeout);
 
 	return 0;
 }
 
+int wss_send(struct libbex_platform *pl, unsigned char *str, size_t sz)
+{
+	struct wss_ctl *wss;
+	struct wss_iovec *io = NULL;
+
+	if (!pl || !pl->wss)
+		return -EINVAL;
+
+	wss = (struct wss_ctl *) pl->wss;
+	DBG(WSS, bex_debugobj(wss, "add new pending data [sz=%zu]", sz));
+
+	if (list_empty(&wss->free_data)) {
+		io = calloc(1, sizeof(struct wss_iovec));
+		if (!io)
+			return -ENOMEM;
+		DBG(WSS, bex_debugobj(wss, "alloc iovec [%p]", io));
+	} else {
+		io = list_first_entry(&io->vects, struct wss_iovec, vects);
+		list_del(&io->vects);
+		memset(io, 0, sizeof(*io));
+		DBG(WSS, bex_debugobj(wss, "reuse iovec [%p]", io));
+	}
+
+	INIT_LIST_HEAD(&io->vects);
+	io->sz = sz;
+	io->buf = str;
+	list_add_tail(&io->vects, &wss->pending_data);
+
+	/* inform libwebsockets that we want to send data */
+	lws_callback_on_writable( wss->wsi );
+	return 0;
+}
+
+/* write all pending data */
+static int wss_write(struct wss_ctl *wss)
+{
+	struct list_head *pe, *pnext;
+
+	DBG(WSS, bex_debugobj(wss, "writing pending data... "));
+
+	if (list_empty(&wss->pending_data)) {
+		DBG(WSS, bex_debugobj(wss, " no data pending"));
+		return 0;
+	}
+
+	list_for_each_safe(pe, pnext, &wss->pending_data) {
+		struct wss_iovec *io = list_entry(pe, struct wss_iovec, vects);
+		size_t sz = wss_count_bufsiz(io->sz);
+		unsigned char *p;
+
+		/* (re)allocate buffer */
+		if (wss->bufsz < sz) {
+			size_t newsz = sz < BEX_WSS_MINBUFSIZ ? BEX_WSS_MINBUFSIZ : sz;
+			unsigned char *tmp = realloc(wss->buf, newsz);
+
+			DBG(WSS, bex_debugobj(wss, " (re)allocated new write buffer [sz=%zu]", newsz));
+			if (!tmp)
+				return -ENOMEM;
+
+			wss->buf = tmp;
+			wss->bufsz = newsz;
+		}
+
+		DBG(WSS, bex_debugobj(wss, " writing iovec [%p, sz=%zu]", io, io->sz));
+
+		/* copy data to buffer */
+		p = wss->buf + LWS_SEND_BUFFER_PRE_PADDING;
+		memcpy(p, io->buf, io->sz);
+
+		/* send */
+		lws_write(wss->wsi, p, io->sz, LWS_WRITE_TEXT);
+
+		/* deallocate and move to unused */
+		free(io->buf);
+		list_del(&io->vects);
+		list_add_tail(&io->vects, &wss->free_data);
+	}
+
+	return 0;
+}

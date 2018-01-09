@@ -24,7 +24,8 @@ global:
 	bex_array_add;
 	bex_array_remove;
 	bex_array_get;
-	bex_array_to_string;
+	bex_array_to_stream;
+	bex_array_is_empty;
 
 	bex_new_value;
 	bex_ref_value;

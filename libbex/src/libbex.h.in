@@ -142,7 +142,7 @@ extern struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, c
 extern int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_connect(struct libbex_platform *pl);
 extern int bex_platform_disconnect(struct libbex_platform *pl);
-extern int bex_platform_send(struct libbex_platform *pl, const char *str);
+extern int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz);
 extern int bex_platform_service(struct libbex_platform *pl);
 
 
@@ -153,7 +153,8 @@ extern void bex_unref_array(struct libbex_array *ar);
 extern int bex_array_add(struct libbex_array *ar, struct libbex_value *va);
 extern int bex_array_remove(struct libbex_array *ar, struct libbex_value *va);
 extern struct libbex_value *bex_array_get(struct libbex_array *ar, const char *name);
-extern char *bex_array_to_string(struct libbex_array *ar, const char *first, const char *firstval);
+extern int bex_array_to_stream(struct libbex_array *ar, FILE *stream);
+extern int bex_array_is_empty(struct libbex_array *ar);
 
 /* value */
 extern struct libbex_value *bex_new_value(const char *name);
