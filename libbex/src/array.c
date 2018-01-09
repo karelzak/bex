@@ -71,7 +71,6 @@ void bex_unref_array(struct libbex_array *ar)
 	}
 }
 
-
 /**
  * bex_array_add:
  * @ar: array
@@ -129,6 +128,17 @@ int bex_array_remove(struct libbex_array *ar, struct libbex_value *va)
 }
 
 /**
+ * bex_array_is_empty:
+ * @ar: array
+ *
+ * Returns: 0 or 1
+ */
+int bex_array_is_empty(struct libbex_array *ar)
+{
+	return !ar || ar->nitems == 0;
+}
+
+/**
  * bex_array_get:
  * @ar: array
  * @name: value name
@@ -151,29 +161,19 @@ struct libbex_value *bex_array_get(struct libbex_array *ar, const char *name)
 	return NULL;
 }
 
-char *bex_array_to_string(struct libbex_array *ar, const char *first, const char *firstval)
+int bex_array_to_stream(struct libbex_array *ar, FILE *stream)
 {
-	size_t i, sz = 0;
-	FILE *stream;
-	char *res = NULL;
+	size_t i;
 
-	if (!ar)
-		return NULL;
-
-	stream = open_memstream(&res, &sz);
-	if (!stream)
-		return NULL;
+	if (!ar || !stream)
+		return -EINVAL;
 
 	DBG(ARY, bex_debugobj(ar, "converting to string"));
-	fputs("{ ", stream);
-
-	if (first)
-		fprintf(stream, "\"%s\": \"%s\"", first, firstval);
 
 	for (i = 0; i < ar->nitems; i++) {
 		struct libbex_value *va = ar->items[i];
 
-		if (i > 0 || first)
+		if (i > 0)
 			fputs(", ", stream);
 
 		switch (va->type) {
@@ -191,8 +191,6 @@ char *bex_array_to_string(struct libbex_array *ar, const char *first, const char
 		}
 	}
 
-	fputs(" }", stream);
-	fclose(stream);
-	return res;
+	return 0;
 }
 
