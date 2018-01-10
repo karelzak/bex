@@ -14,7 +14,7 @@ global:
 	bex_event_add_value;
 	bex_event_remove_value;
 	bex_event_get_values;
-	bex_event_set_receive_callback;
+	bex_event_set_reply_callback;
 	bex_event_set_data;
 	bex_event_get_data;
 

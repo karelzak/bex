@@ -125,8 +125,11 @@ extern void bex_ref_event(struct libbex_event *ev);
 extern void bex_unref_event(struct libbex_event *ev);
 extern int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va);
 extern int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va);
+extern int bex_event_add_reply(struct libbex_event *ev, struct libbex_value *va);
+extern int bex_event_remove_reply(struct libbex_event *ev, struct libbex_value *va);
 extern struct libbex_array *bex_event_get_values(struct libbex_event *ev);
-extern int bex_event_set_receive_callback(struct libbex_event *ev,
+extern struct libbex_array *bex_event_get_replies(struct libbex_event *ev);
+extern int bex_event_set_reply_callback(struct libbex_event *ev,
                 int (*fn)(struct libbex_platform *, struct libbex_event *));
 extern int bex_event_set_data(struct libbex_event *ev, void *dt);
 extern void *bex_event_get_data(struct libbex_event *ev);
@@ -140,10 +143,12 @@ extern int bex_platform_add_event(struct libbex_platform *pl, struct libbex_even
 extern int bex_platform_next_event(struct libbex_platform *pl, struct libbex_iter *itr, struct libbex_event **ev);
 extern struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const char *name);
 extern int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev);
+extern int bex_platform_receive_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_connect(struct libbex_platform *pl);
 extern int bex_platform_disconnect(struct libbex_platform *pl);
 extern int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz);
 extern int bex_platform_service(struct libbex_platform *pl);
+extern int bex_platform_receive(struct libbex_platform *pl, unsigned char *str);
 
 
 /* array.c */
@@ -153,8 +158,10 @@ extern void bex_unref_array(struct libbex_array *ar);
 extern int bex_array_add(struct libbex_array *ar, struct libbex_value *va);
 extern int bex_array_remove(struct libbex_array *ar, struct libbex_value *va);
 extern struct libbex_value *bex_array_get(struct libbex_array *ar, const char *name);
+extern struct libbex_value *bex_array_nget(struct libbex_array *ar, const char *name, size_t n);
 extern int bex_array_to_stream(struct libbex_array *ar, FILE *stream);
 extern int bex_array_is_empty(struct libbex_array *ar);
+extern int bex_array_fill_from_string(struct libbex_array *ar, const char *str);
 
 /* value */
 extern struct libbex_value *bex_new_value(const char *name);

@@ -44,16 +44,14 @@ static int wss_callback(struct lws *wsi,
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
 		DBG(WSS, bex_debug("CALLBACK: client incomming data"));
-		printf("data: >>%s<<\n", (char *)in);
+		if (wss && in)
+			bex_platform_receive(wss->pl, in);
 		break;
 
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
 		DBG(WSS, bex_debug("CALLBACK: client writeable"));
-		if (!user) {
-			DBG(WSS, bex_debug(" no user data; ignore"));
-			return 0;
-		}
-		wss_write(user);
+		if (wss)
+			wss_write(wss);
 		break;
 
 	case LWS_CALLBACK_CLOSED:

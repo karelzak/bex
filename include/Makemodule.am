@@ -5,4 +5,5 @@ dist_noinst_HEADERS += \
 	include/debug.h \
 	include/xalloc.h \
 	include/strutils.h \
-	include/nls.h
+	include/nls.h \
+	include/strutils.h

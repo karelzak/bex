@@ -12,7 +12,17 @@
 
 static int pong_callback(struct libbex_platform *pl, struct libbex_event *ev)
 {
-	printf("get pong event");
+	struct libbex_array *re = bex_event_get_replies(ev);
+	struct libbex_value *va_ma = re ? bex_array_get_value(ar, "ts") : NULL;
+	struct libbex_value *va_cid = re ? bex_array_get_value(ar, "cid") : NULL;
+
+	if (va_ms && va_cid) {
+		uint64_t start = bex_value_get_u64(va_cid);
+		uint64_t end = bex_value_get_u64(va_ms);
+
+		printf("PING %ju\n", end - start);
+	}
+
 	return 0;
 }
 
@@ -37,6 +47,7 @@ int main(int argc, char **argv)
 	const char *uri = LIBBEX_DEFAULT_URI;
 	struct libbex_platform *pl;
 	struct libbex_event *ping, *ev;
+	struct libbex_value *start;
 
 	static const struct option longopts[] = {
 		{ "help",	no_argument,		0, 'h' },
@@ -66,20 +77,28 @@ int main(int argc, char **argv)
 		err(EXIT_FAILURE, _("failed to create platform instance for %s"), uri);
 
 	ev = bex_new_event("pong");
-	bex_event_set_receive_callback(ev, pong_callback);
+	bex_event_set_reply_callback(ev, pong_callback);
+	bex_event_add_reply(ev, bex_new_value_u64("ts", 0));
 	bex_platform_add_event(pl, ev);
 	bex_unref_event(ev);
 
-	/* send only; don't have to be added */
+	/* send only; don't have to be added to platform */
 	ping = bex_new_event("ping");
-	bex_event_add_value(ping, bex_new_value_u64("cid", 123));
+	bex_event_add_value(ping, (start = bex_new_value_u64("cid", 0)));
+
 
 	bex_platform_connect(pl);
 
-	bex_platform_emit_event(pl, ping);
+	while (1) {
+		struct timeval tv;
 
-	while (1)
+		gettimeofday(&tv);
+
+		/* update "cid" with the current milliseconds */
+		bex_value_set_u64_data(start, (tv.tv_sec * 1000) + (tv.tv_usec/1000));
+		bex_platform_emit_event(pl, ping);
 		bex_platform_service(pl);
+	}
 
 	bex_unref_event(ping);
 	bex_unref_platform(pl);

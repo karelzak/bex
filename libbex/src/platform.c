@@ -245,6 +245,17 @@ int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev)
 	return rc;
 }
 
+int bex_platform_receive_event(struct libbex_platform *pl, struct libbex_event *ev,
+			       struct libbex_array *ar)
+{
+	DBG(PLAT, bex_debugobj(pl, "received event %s [%p]", ev->name, ev));
+
+	if (ev->callback)
+		return ev->callback(pl, ev, ar);
+
+	return 0;
+}
+
 int bex_platform_connect(struct libbex_platform *pl)
 {
 	DBG(PLAT, bex_debugobj(pl, "connecting"));
@@ -273,6 +284,57 @@ int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz)
 	return wss_send(pl, str, sz);
 }
 
+static int is_event_string(const unsigned char *str, char **name)
+{
+	const char *p = (char *) str, *n;
 
+	*name = NULL;
 
+	p = skip_space(p);
+	if (!*p != '{')
+		return 0;
 
+	p = skip_space(p);
+	if (strcmp(p, "\"event\"") != 0)
+		return 0;
+
+	p = skip_space(p);
+	if (!*p != ':')
+		return 0;
+
+	p = skip_space(p);
+	if (!*p != '"' || *(p+1) == '\0')
+		return 0;
+	n = ++p;
+	while (*p && *p != '"')
+		p++;
+
+	if (!*p)
+		return 0;
+	name = strndup(n, p - n);
+	return name ? 1 : 0;
+}
+
+int bex_platform_receive(struct libbex_platform *pl, const char *str)
+{
+	char *name = NULL;
+	int rc = 0;
+
+	DBG(PLAT, bex_debugobj(pl, "receive"));
+
+	if (is_event_string(str, &name)) {
+		struct libbex_event *ev;
+
+		DBG(PLAT, bex_debugobj(pl, "received event with name '%s'", name));
+
+		ev = bex_platform_get_event(pl, name);
+		if (ev) {
+			bex_array_fill_from_string(ev->reply, str);
+			rc = bex_platform_receive_event(pl, ev);
+		} else
+			DBG(PLAT, bex_debugobj(pl, "event unssuported [ignore]"));
+	}
+
+	free(name);
+	return rc;
+}

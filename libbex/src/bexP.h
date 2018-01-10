@@ -91,6 +91,8 @@ struct libbex_event {
 	void	*data;
 
 	struct libbex_array	*vals;
+	struct libbex_array	*reply;
+
 	struct list_head	events;		/* platform events list */
 };
 

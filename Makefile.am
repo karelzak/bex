@@ -59,6 +59,7 @@ EXTRA_DIST += \
 
 
 include include/Makemodule.am
+include lib/Makemodule.am
 include libbex/Makemodule.am
 include src/Makemodule.am
 

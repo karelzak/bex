@@ -7,6 +7,7 @@ static void free_event(struct libbex_event *ev)
 
 	DBG(EVENT, bex_debugobj(ev, "free [name=%s]", ev->name));
 	bex_unref_array(ev->vals);
+	bex_unref_array(ev->reply);
 	free(ev->name);
 	free(ev);
 }
@@ -31,10 +32,6 @@ struct libbex_event *bex_new_event(const char *name)
 	ev->name = strdup(name);
 	if (!ev->name)
 		goto err;
-	ev->vals = bex_new_array(3);
-	if (!ev->vals)
-		goto err;
-
 	INIT_LIST_HEAD(&ev->events);
 	return ev;
 err:
@@ -83,6 +80,12 @@ int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va)
 	if (!va || !ev)
 		return -EINVAL;
 
+	if (!ev->vals) {
+		ev->vals = bex_new_array(3);
+		if (!ev->vals)
+			return -ENOMEM;
+	}
+
 	DBG(EVENT, bex_debugobj(ev, "add value %s [%p]", va->name, va));
 	return bex_array_add(ev->vals, va);
 }
@@ -98,6 +101,8 @@ int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va)
 {
 	if (!va || !ev)
 		return -EINVAL;
+	if (!ev->vals)
+		return 0;
 
 	DBG(EVENT, bex_debugobj(ev, "remove value %s [%p]", va->name, va));
 	return bex_array_remove(ev->vals, va);
@@ -117,13 +122,26 @@ struct libbex_array *bex_event_get_values(struct libbex_event *ev)
 }
 
 /**
- * bex_event_set_receive_callback
+ * bex_event_get_replies
+ * @ev: event
+ *
+ * Returns: values list
+ */
+struct libbex_array *bex_event_get_replies(struct libbex_event *ev)
+{
+	if (!ev)
+		return NULL;
+	return ev->reply;
+}
+
+/**
+ * bex_event_set_reply_callback
  * @ev: event
  * @fn: callback function
  *
  * Returns: 0 or <0 on error
  */
-int bex_event_set_receive_callback(struct libbex_event *ev,
+int bex_event_set_reply_callback(struct libbex_event *ev,
 		int (*fn)(struct libbex_platform *, struct libbex_event *))
 {
 	if (!ev)
@@ -160,3 +178,44 @@ void *bex_event_get_data(struct libbex_event *ev)
 		return NULL;
 	return ev->data;
 }
+
+/**
+ * bex_event_add_reply:
+ * @ev: event
+ * @va: value
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_event_add_reply(struct libbex_event *ev, struct libbex_value *va)
+{
+	if (!va || !ev)
+		return -EINVAL;
+
+	if (!ev->reply) {
+		ev->reply = bex_new_array(3);
+		if (!ev->reply)
+			return -ENOMEM;
+	}
+
+	DBG(EVENT, bex_debugobj(ev, "add reply %s [%p]", va->name, va));
+	return bex_array_add(ev->reply, va);
+}
+
+/**
+ * bex_event_remove_reply:
+ * @ev: event
+ * @val: value
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_event_remove_reply(struct libbex_event *ev, struct libbex_value *va)
+{
+	if (!va || !ev)
+		return -EINVAL;
+	if (!ev->reply)
+		return 0;
+
+	DBG(EVENT, bex_debugobj(ev, "remove reply %s [%p]", va->name, va));
+	return bex_array_remove(ev->reply, va);
+}
+
