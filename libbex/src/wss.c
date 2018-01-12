@@ -103,7 +103,8 @@ int wss_connect(struct libbex_platform *pl)
 	if (!wss) {
 	        struct lws_context_creation_info info;
 
-		lws_set_log_level(LLL_ERR|LLL_WARN|LLL_NOTICE|LLL_INFO|LLL_DEBUG|LLL_PARSER|LLL_HEADER|LLL_CLIENT, NULL);
+		lws_set_log_level(0, NULL);
+		ON_DBG(WSS, lws_set_log_level(LLL_ERR|LLL_WARN|LLL_NOTICE|LLL_INFO|LLL_DEBUG|LLL_PARSER|LLL_HEADER|LLL_CLIENT, NULL));
 
 		wss = calloc(1, sizeof(struct wss_ctl));
 		if (!wss)
@@ -234,7 +235,7 @@ int wss_send(struct libbex_platform *pl, unsigned char *str, size_t sz)
 			return -ENOMEM;
 		DBG(WSS, bex_debugobj(wss, "alloc iovec [%p]", io));
 	} else {
-		io = list_first_entry(&io->vects, struct wss_iovec, vects);
+		io = list_first_entry(&wss->free_data, struct wss_iovec, vects);
 		list_del(&io->vects);
 		memset(io, 0, sizeof(*io));
 		DBG(WSS, bex_debugobj(wss, "reuse iovec [%p]", io));
@@ -290,6 +291,7 @@ static int wss_write(struct wss_ctl *wss)
 		lws_write(wss->wsi, p, io->sz, LWS_WRITE_TEXT);
 
 		/* deallocate and move to unused */
+		DBG(WSS, bex_debugobj(wss, " remove from pending iovec [%p]", io));
 		free(io->buf);
 		list_del(&io->vects);
 		list_add_tail(&io->vects, &wss->free_data);

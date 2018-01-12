@@ -138,6 +138,8 @@ extern void *bex_event_get_data(struct libbex_event *ev);
 extern struct libbex_platform *bex_new_platform(const char *uri);
 extern void bex_ref_platform(struct libbex_platform *pl);
 extern void bex_unref_platform(struct libbex_platform *pl);
+extern int bex_platform_set_timeout(struct libbex_platform *pl, int ms);
+extern const char *bex_platform_get_address(struct libbex_platform *pl);
 extern int bex_platform_remove_event(struct libbex_platform *pl, struct libbex_event *ex);
 extern int bex_platform_add_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_next_event(struct libbex_platform *pl, struct libbex_iter *itr, struct libbex_event **ev);
@@ -148,7 +150,7 @@ extern int bex_platform_connect(struct libbex_platform *pl);
 extern int bex_platform_disconnect(struct libbex_platform *pl);
 extern int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz);
 extern int bex_platform_service(struct libbex_platform *pl);
-extern int bex_platform_receive(struct libbex_platform *pl, unsigned char *str);
+extern int bex_platform_receive(struct libbex_platform *pl, const char *str);
 
 
 /* array.c */
@@ -167,12 +169,18 @@ extern int bex_array_fill_from_string(struct libbex_array *ar, const char *str);
 extern struct libbex_value *bex_new_value(const char *name);
 extern void bex_ref_value(struct libbex_value *va);
 extern void bex_unref_value(struct libbex_value *va);
-extern int bex_value_set_u64_data(struct libbex_value *va, uint64_t num);
+
+extern int bex_value_set_u64(struct libbex_value *va, uint64_t num);
 extern struct libbex_value *bex_new_value_u64(const char *name, uint64_t n);
-extern int bex_value_set_s64_data(struct libbex_value *va, int64_t num);
+extern uint64_t bex_value_get_u64(struct libbex_value *va);
+
+extern int bex_value_set_s64(struct libbex_value *va, int64_t num);
 extern struct libbex_value *bex_new_value_s64(const char *name, int64_t n);
-extern int bex_value_set_str_data(struct libbex_value *va, const char *str);
+extern int64_t bex_value_get_s64(struct libbex_value *va);
+
+extern int bex_value_set_str(struct libbex_value *va, const char *str);
 extern struct libbex_value *bex_new_value_str(const char *name, const char *str);
+extern char *bex_value_get_str(struct libbex_value *va);
 
 #ifdef __cplusplus
 }

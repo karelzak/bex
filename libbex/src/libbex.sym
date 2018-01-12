@@ -13,7 +13,10 @@ global:
 	bex_unref_event;
 	bex_event_add_value;
 	bex_event_remove_value;
+	bex_event_add_reply;
+	bex_event_remove_reply;
 	bex_event_get_values;
+	bex_event_get_replies;
 	bex_event_set_reply_callback;
 	bex_event_set_data;
 	bex_event_get_data;
@@ -30,16 +33,21 @@ global:
 	bex_new_value;
 	bex_ref_value;
 	bex_unref_value;
-	bex_value_set_u64_data;
+	bex_value_set_u64;
+	bex_value_get_u64;
 	bex_new_value_u64;
-	bex_value_set_s64_data;
+	bex_value_set_s64;
+	bex_value_get_s64;
 	bex_new_value_s64;
-	bex_value_set_str_data;
+	bex_value_set_str;
+	bex_value_get_str;
 	bex_new_value_str;
 
 	bex_new_platform;
 	bex_ref_platform;
 	bex_unref_platform;
+	bex_platform_set_timeout;
+	bex_platform_get_address;
 	bex_platform_remove_event;
 	bex_platform_add_event;
 	bex_platform_connect;

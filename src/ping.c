@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <getopt.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 #include <libbex.h>
 
@@ -10,19 +11,22 @@
 #include "nls.h"
 #include "xalloc.h"
 
+static uint64_t lastping = 0;
+
 static int pong_callback(struct libbex_platform *pl, struct libbex_event *ev)
 {
-	struct libbex_array *re = bex_event_get_replies(ev);
-	struct libbex_value *va_ma = re ? bex_array_get_value(ar, "ts") : NULL;
-	struct libbex_value *va_cid = re ? bex_array_get_value(ar, "cid") : NULL;
+	struct libbex_array *ar = bex_event_get_replies(ev);
+	struct libbex_value *ts = ar ? bex_array_get(ar, "ts") : NULL;
 
-	if (va_ms && va_cid) {
-		uint64_t start = bex_value_get_u64(va_cid);
-		uint64_t end = bex_value_get_u64(va_ms);
+	if (ts) {
+		uint64_t end = bex_value_get_u64(ts);
 
-		printf("PING %ju\n", end - start);
+		printf("PING %s: %ju ms\n",
+				bex_platform_get_address(pl),
+				end - lastping);
 	}
 
+	lastping = 0;
 	return 0;
 }
 
@@ -43,11 +47,12 @@ static void __attribute__((__noreturn__)) usage(void)
 
 int main(int argc, char **argv)
 {
-	int c;
+	int c, tries;
 	const char *uri = LIBBEX_DEFAULT_URI;
 	struct libbex_platform *pl;
 	struct libbex_event *ping, *ev;
 	struct libbex_value *start;
+	uint64_t last = 0;
 
 	static const struct option longopts[] = {
 		{ "help",	no_argument,		0, 'h' },
@@ -86,18 +91,25 @@ int main(int argc, char **argv)
 	ping = bex_new_event("ping");
 	bex_event_add_value(ping, (start = bex_new_value_u64("cid", 0)));
 
-
 	bex_platform_connect(pl);
+	bex_platform_set_timeout(pl, 1000);
 
-	while (1) {
-		struct timeval tv;
+	for (tries = 0; tries < 10; ) {
+		if (!lastping) {
+			struct timeval tv;
+			uint64_t now;
 
-		gettimeofday(&tv);
+			gettimeofday(&tv, NULL);
+			now = (tv.tv_sec * 1000) + (tv.tv_usec/1000);
 
-		/* update "cid" with the current milliseconds */
-		bex_value_set_u64_data(start, (tv.tv_sec * 1000) + (tv.tv_usec/1000));
-		bex_platform_emit_event(pl, ping);
-		bex_platform_service(pl);
+			if (now > last + 1000) {
+				bex_platform_emit_event(pl, ping);
+				lastping = last = now;
+				tries++;
+			}
+		}
+		while (lastping)
+			bex_platform_service(pl);
 	}
 
 	bex_unref_event(ping);

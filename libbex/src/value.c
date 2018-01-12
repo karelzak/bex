@@ -72,7 +72,7 @@ void bex_unref_value(struct libbex_value *va)
 	}
 }
 
-int bex_value_set_u64_data(struct libbex_value *va, uint64_t num)
+int bex_value_set_u64(struct libbex_value *va, uint64_t num)
 {
 	value_reset(va);
 	va->data.u64 = num;
@@ -80,15 +80,20 @@ int bex_value_set_u64_data(struct libbex_value *va, uint64_t num)
 	return 0;
 }
 
+uint64_t bex_value_get_u64(struct libbex_value *va)
+{
+	return va->data.u64;
+}
+
 struct libbex_value *bex_new_value_u64(const char *name, uint64_t n)
 {
 	struct libbex_value *va = bex_new_value(name);
 	if (va)
-		bex_value_set_u64_data(va, n);
+		bex_value_set_u64(va, n);
 	return va;
 }
 
-int bex_value_set_s64_data(struct libbex_value *va, int64_t num)
+int bex_value_set_s64(struct libbex_value *va, int64_t num)
 {
 	value_reset(va);
 	va->data.s64 = num;
@@ -96,26 +101,37 @@ int bex_value_set_s64_data(struct libbex_value *va, int64_t num)
 	return 0;
 }
 
+int64_t bex_value_get_s64(struct libbex_value *va)
+{
+	return va->data.s64;
+}
+
 struct libbex_value *bex_new_value_s64(const char *name, int64_t n)
 {
 	struct libbex_value *va = bex_new_value(name);
 	if (va)
-		bex_value_set_s64_data(va, n);
+		bex_value_set_s64(va, n);
 	return va;
 }
 
-int bex_value_set_str_data(struct libbex_value *va, const char *str)
+int bex_value_set_str(struct libbex_value *va, const char *str)
 {
 	value_reset(va);
 	va->data.str = strdup(str);
 	va->type = BEX_TYPE_STR;
 	return 0;
 }
+
+char *bex_value_get_str(struct libbex_value *va)
+{
+	return va->data.str;
+}
+
 struct libbex_value *bex_new_value_str(const char *name, const char *str)
 {
 	struct libbex_value *va = bex_new_value(name);
 	if (va)
-		bex_value_set_str_data(va, str);
+		bex_value_set_str(va, str);
 	return va;
 }
 

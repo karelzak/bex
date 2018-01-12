@@ -1,4 +1,9 @@
 
+
+#include <ctype.h>
+#include <stdint.h>
+#include <inttypes.h>
+
 #include "bexP.h"
 
 static void free_array(struct libbex_array *ar)
@@ -292,7 +297,7 @@ static int parse_next(char **optstr, char **name, size_t *namesz,
 
 	return 1;				/* end of optstr */
 error:
-	DBG(ARY, bex_debugobj(ar, "failed to parse >>>%s<<<", optstr));
+	DBG(ARY, bex_debug("failed to parse >>>%s<<<", *optstr));
 	return -1;
 }
 
@@ -325,7 +330,7 @@ int bex_array_fill_from_string(struct libbex_array *ar, const char *str)
 				DBG(ARY, bex_debugobj(ar, "strtoumax() failed"));
 			break;
 		case BEX_TYPE_S64:
-			va->data.s64 = strtosmax(value, &end, 10);
+			va->data.s64 = strtoimax(value, &end, 10);
 			if (errno || value == end)
 				DBG(ARY, bex_debugobj(ar, "strtosmax() failed"));
 			break;

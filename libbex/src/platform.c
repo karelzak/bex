@@ -1,5 +1,6 @@
 
 #include "bexP.h"
+#include "strutils.h"
 
 #include <libwebsockets.h>
 
@@ -45,7 +46,7 @@ struct libbex_platform *bex_new_platform(const char *uri)
 		goto err;
 
 	pl->service_timeout = 250;
-	pl->reconnect_timeout = 50;
+	pl->reconnect_timeout = 500;
 	pl->connection_attempts = 5;
 	pl->uri_port = 443;
 
@@ -88,6 +89,17 @@ err:
 	free(_uri);
 	free_platform(pl);
 	return NULL;
+}
+
+int bex_platform_set_timeout(struct libbex_platform *pl, int ms)
+{
+	pl->service_timeout = ms;
+	return 0;
+}
+
+const char *bex_platform_get_address(struct libbex_platform *pl)
+{
+	return pl->uri_addr;
 }
 
 /**
@@ -245,13 +257,12 @@ int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev)
 	return rc;
 }
 
-int bex_platform_receive_event(struct libbex_platform *pl, struct libbex_event *ev,
-			       struct libbex_array *ar)
+int bex_platform_receive_event(struct libbex_platform *pl, struct libbex_event *ev)
 {
 	DBG(PLAT, bex_debugobj(pl, "received event %s [%p]", ev->name, ev));
 
 	if (ev->callback)
-		return ev->callback(pl, ev, ar);
+		return ev->callback(pl, ev);
 
 	return 0;
 }
@@ -284,35 +295,38 @@ int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz)
 	return wss_send(pl, str, sz);
 }
 
-static int is_event_string(const unsigned char *str, char **name)
+static int is_event_string(const char *str, char **name)
 {
 	const char *p = (char *) str, *n;
 
 	*name = NULL;
 
 	p = skip_space(p);
-	if (!*p != '{')
+	if (*p != '{')
 		return 0;
 
-	p = skip_space(p);
-	if (strcmp(p, "\"event\"") != 0)
+	p = skip_space(++p);
+	if (strncmp(p, "\"event\"", 7) != 0)
 		return 0;
+	p += 7;
 
 	p = skip_space(p);
-	if (!*p != ':')
+	if (*p != ':')
 		return 0;
 
-	p = skip_space(p);
-	if (!*p != '"' || *(p+1) == '\0')
+	p = skip_space(++p);
+	if (*p != '"')
 		return 0;
+
 	n = ++p;
 	while (*p && *p != '"')
 		p++;
 
 	if (!*p)
 		return 0;
-	name = strndup(n, p - n);
-	return name ? 1 : 0;
+
+	*name = strndup(n, p - n);
+	return *name ? 1 : 0;
 }
 
 int bex_platform_receive(struct libbex_platform *pl, const char *str)
@@ -320,7 +334,7 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 	char *name = NULL;
 	int rc = 0;
 
-	DBG(PLAT, bex_debugobj(pl, "receive"));
+	DBG(PLAT, bex_debugobj(pl, "receive: >>>%s<<<", str));
 
 	if (is_event_string(str, &name)) {
 		struct libbex_event *ev;
