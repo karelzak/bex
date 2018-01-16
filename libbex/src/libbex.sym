@@ -15,6 +15,7 @@ global:
 	bex_event_remove_value;
 	bex_event_add_reply;
 	bex_event_remove_reply;
+	bex_event_update_reply;
 	bex_event_get_values;
 	bex_event_get_replies;
 	bex_event_set_reply_callback;
@@ -54,7 +55,8 @@ global:
 	bex_platform_disconnect;
 	bex_platform_send;
 	bex_platform_service;
-	bex_platform_emit_event;
+	bex_platform_send_event;
+	bex_platform_receive_event;
 local:
 	*;
 };

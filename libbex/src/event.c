@@ -219,3 +219,19 @@ int bex_event_remove_reply(struct libbex_event *ev, struct libbex_value *va)
 	return bex_array_remove(ev->reply, va);
 }
 
+/**
+ * bex_event_update_reply:
+ * @ev: event
+ * @str: unparsed data
+ *
+ * Parse @str and fill reply array.
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_event_update_reply(struct libbex_event *ev, const char *str)
+{
+	if (!ev || !str)
+		return -EINVAL;
+
+	return bex_array_fill_from_string(ev->reply, str);
+}

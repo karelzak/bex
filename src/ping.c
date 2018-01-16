@@ -103,7 +103,7 @@ int main(int argc, char **argv)
 			now = (tv.tv_sec * 1000) + (tv.tv_usec/1000);
 
 			if (now > last + 1000) {
-				bex_platform_emit_event(pl, ping);
+				bex_platform_send_event(pl, ping);
 				lastping = last = now;
 				tries++;
 			}

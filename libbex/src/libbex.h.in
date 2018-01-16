@@ -127,6 +127,7 @@ extern int bex_event_add_value(struct libbex_event *ev, struct libbex_value *va)
 extern int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *va);
 extern int bex_event_add_reply(struct libbex_event *ev, struct libbex_value *va);
 extern int bex_event_remove_reply(struct libbex_event *ev, struct libbex_value *va);
+extern int bex_event_update_reply(struct libbex_event *ev, const char *str);
 extern struct libbex_array *bex_event_get_values(struct libbex_event *ev);
 extern struct libbex_array *bex_event_get_replies(struct libbex_event *ev);
 extern int bex_event_set_reply_callback(struct libbex_event *ev,
@@ -144,7 +145,7 @@ extern int bex_platform_remove_event(struct libbex_platform *pl, struct libbex_e
 extern int bex_platform_add_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_next_event(struct libbex_platform *pl, struct libbex_iter *itr, struct libbex_event **ev);
 extern struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const char *name);
-extern int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev);
+extern int bex_platform_send_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_receive_event(struct libbex_platform *pl, struct libbex_event *ev);
 extern int bex_platform_connect(struct libbex_platform *pl);
 extern int bex_platform_disconnect(struct libbex_platform *pl);

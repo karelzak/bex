@@ -221,7 +221,7 @@ struct libbex_event *bex_platform_get_event(struct libbex_platform *pl, const ch
 	return NULL;
 }
 
-int bex_platform_emit_event(struct libbex_platform *pl, struct libbex_event *ev)
+int bex_platform_send_event(struct libbex_platform *pl, struct libbex_event *ev)
 {
 	int rc = 0;
 	size_t sz = 0;
@@ -343,10 +343,12 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 
 		ev = bex_platform_get_event(pl, name);
 		if (ev) {
-			bex_array_fill_from_string(ev->reply, str);
-			rc = bex_platform_receive_event(pl, ev);
+			rc = bex_event_update_reply(ev, str);
+			if (!rc)
+				rc = bex_platform_receive_event(pl, ev);
 		} else
 			DBG(PLAT, bex_debugobj(pl, "event unssuported [ignore]"));
+
 	}
 
 	free(name);
