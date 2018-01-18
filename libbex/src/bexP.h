@@ -19,6 +19,7 @@
 #define BEX_DEBUG_ARY		(1 << 4)
 #define BEX_DEBUG_VAL		(1 << 5)
 #define BEX_DEBUG_EVENT		(1 << 6)
+#define BEX_DEBUG_CHAN		(1 << 7)
 
 #define BEX_DEBUG_ALL		0xFFFF
 
@@ -55,7 +56,7 @@ struct libbex_iter {
 	} while(0)
 
 enum {
-	BEX_TYPE_STR,
+	BEX_TYPE_STR = 1,
 	BEX_TYPE_U64,
 	BEX_TYPE_S64,
 	BEX_TYPE_FLOAT
@@ -81,6 +82,24 @@ struct libbex_array {
 	size_t	nalloc;		/* number of allocated items */
 
 	struct libbex_value	**items;
+};
+
+struct libbex_channel {
+	int	refcount;
+	char	*name;
+	uint64_t id;
+
+	int	(*callback)(struct libbex_platform *, struct libbex_channel *);
+	void	*data;
+
+	struct libbex_event	*subscribe;
+	struct libbex_array	*reply;
+
+	char	*inbuff;
+
+	struct list_head	channels;		/* platform events list */
+
+	unsigned int	subscribed : 1;
 };
 
 struct libbex_event {
@@ -111,6 +130,8 @@ struct libbex_platform {
 	unsigned int	service_timeout;
 
 	struct list_head	events;
+	struct list_head	channels;
+
 };
 ;
 /* wss.c */

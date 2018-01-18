@@ -3,9 +3,10 @@
 
 static void value_reset(struct libbex_value *va)
 {
-	if (va->type == BEX_TYPE_STR)
+	if (va->type == BEX_TYPE_STR) {
 		free(va->data.str);
-	va->type = 0;
+		va->data.str = NULL;
+	}
 }
 
 static void free_value(struct libbex_value *va)
@@ -13,6 +14,7 @@ static void free_value(struct libbex_value *va)
 	if (!va)
 		return;
 
+	DBG(VAL, bex_debugobj(va, "free [name=%s]", va->name));
 	free(va->name);
 	value_reset(va);
 	free(va);
@@ -33,6 +35,7 @@ struct libbex_value *bex_new_value(const char *name)
 	if (!va)
 		goto err;
 
+	DBG(VAL, bex_debugobj(va, "alloc [name=%s]", name));
 	va->refcount = 1;
 	va->name = strdup(name);
 	if (!va->name)
@@ -117,7 +120,8 @@ struct libbex_value *bex_new_value_s64(const char *name, int64_t n)
 int bex_value_set_str(struct libbex_value *va, const char *str)
 {
 	value_reset(va);
-	va->data.str = strdup(str);
+	if (str)
+		va->data.str = strdup(str);
 	va->type = BEX_TYPE_STR;
 	return 0;
 }
@@ -134,4 +138,26 @@ struct libbex_value *bex_new_value_str(const char *name, const char *str)
 		bex_value_set_str(va, str);
 	return va;
 }
+
+int bex_value_set_float(struct libbex_value *va, double num)
+{
+	value_reset(va);
+	va->data.fl = num;
+	va->type = BEX_TYPE_FLOAT;
+	return 0;
+}
+
+double bex_value_get_float(struct libbex_value *va)
+{
+	return va->data.fl;
+}
+
+struct libbex_value *bex_new_value_float(const char *name, double n)
+{
+	struct libbex_value *va = bex_new_value(name);
+	if (va)
+		bex_value_set_float(va, n);
+	return va;
+}
+
 

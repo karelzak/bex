@@ -14,6 +14,8 @@ libbex_la_SOURCES = \
 	libbex/src/value.c \
 	libbex/src/array.c \
 	libbex/src/wss.c \
+	libbex/src/channel.c \
+	libbex/src/channel-ticker.c \
 	$(nodist_bexinc_HEADERS)
 
 nodist_libbex_la_SOURCES = libbex/src/bexP.h

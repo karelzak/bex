@@ -88,19 +88,23 @@ int bex_array_add(struct libbex_array *ar, struct libbex_value *va)
 	if (!ar || !va)
 		return -EINVAL;
 
-	if (ar->nitems + 1 >= ar->nalloc) {
-		void *tmp = realloc(ar->items, ar->nalloc + 1);
+	if (ar->nitems == ar->nalloc) {
+		void *tmp;
+		size_t newsz = ar->nalloc + 10;
+
+		DBG(ARY, bex_debugobj(ar, " resize %zu -> %zu", ar->nalloc, newsz));
+		tmp = realloc(ar->items, ar->nalloc + 1);
 		if (!tmp)
 			return -ENOMEM;
 		ar->items = tmp;
-		ar->nalloc++;
+		ar->nalloc = newsz;
 	}
 
 	bex_ref_value(va);
 	ar->items[ar->nitems] = va;
 	ar->nitems++;
 
-	DBG(ARY, bex_debugobj(ar, "add value: %s [%p]", va->name, va));
+	DBG(ARY, bex_debugobj(ar, " add %s [%p]", va->name, va));
 	return 0;
 }
 
@@ -123,7 +127,7 @@ int bex_array_remove(struct libbex_array *ar, struct libbex_value *va)
 			if (i < ar->nitems - 1)
 				memmove(ar->items[i], ar->items[i+1], ar->nitems - i - 1);
 			ar->nitems--;
-			DBG(ARY, bex_debugobj(ar, "remove value: %s [%p]", va->name, va));
+			DBG(ARY, bex_debugobj(ar, " remove %s [%p]", va->name, va));
 			bex_unref_value(va);
 			return 0;
 		}

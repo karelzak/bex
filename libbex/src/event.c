@@ -146,6 +146,7 @@ int bex_event_set_reply_callback(struct libbex_event *ev,
 {
 	if (!ev)
 		return -EINVAL;
+	DBG(EVENT, bex_debugobj(ev, "setting callback"));
 	ev->callback = fn;
 	return 0;
 }
@@ -191,13 +192,13 @@ int bex_event_add_reply(struct libbex_event *ev, struct libbex_value *va)
 	if (!va || !ev)
 		return -EINVAL;
 
+	DBG(EVENT, bex_debugobj(ev, "add reply %s [%p]", va->name, va));
 	if (!ev->reply) {
 		ev->reply = bex_new_array(3);
 		if (!ev->reply)
 			return -ENOMEM;
 	}
 
-	DBG(EVENT, bex_debugobj(ev, "add reply %s [%p]", va->name, va));
 	return bex_array_add(ev->reply, va);
 }
 

@@ -15,6 +15,13 @@ static void free_platform(struct libbex_platform *pl)
 				                  struct libbex_event, events);
 		bex_platform_remove_event(pl, ev);
 	}
+
+	while (!list_empty(&pl->channels)) {
+		struct libbex_channel *ch = list_entry(pl->channels.next,
+				                  struct libbex_channel, channels);
+		bex_platform_remove_channel(pl, ch);
+	}
+
 	free(pl->uri_path);
 	free(pl->uri_addr);
 	free(pl->uri_prot);
@@ -78,6 +85,7 @@ struct libbex_platform *bex_new_platform(const char *uri)
 
 	pl->refcount = 1;
 	INIT_LIST_HEAD(&pl->events);
+	INIT_LIST_HEAD(&pl->channels);
 
 	DBG(PLAT, bex_debugobj(pl, "protocol=%s, address=%s, port=%d, path=%s [SSL=%s]",
 				pl->uri_prot, pl->uri_addr,
@@ -116,7 +124,7 @@ void bex_ref_platform(struct libbex_platform *pl)
 
 /**
  * bex_unref_platform:
- * @pl: event pointer
+ * @pl: platform pointer
  *
  * De-increments reference counter, on zero the @pl is automatically
  * deallocated.
@@ -352,5 +360,191 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 	}
 
 	free(name);
+	return rc;
+}
+
+/**
+ * bex_platform_add_channel:
+ * @pl: tab pointer
+ * @ch: channel
+ *
+ * Adds a new channel to platform and increment @ch reference counter. Don't forget to
+ * use bex_unref_channel() after bex_platform_add_channel() you want to keep the @ch
+ * referenced by the platform only.
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_platform_add_channel(struct libbex_platform *pl, struct libbex_channel *ch)
+{
+	if (!pl || !ch)
+		return -EINVAL;
+
+	bex_ref_channel(ch);
+	list_add_tail(&ch->channels, &pl->channels);
+
+	DBG(PLAT, bex_debugobj(pl, "add channel: %s [%p]", ch->name, ch));
+	return 0;
+}
+
+/**
+ * bex_platform_remove_channel:
+ * @pl: platform pointer
+ * @ev: channel
+ *
+ * Removes the @ch from the platform and de-increment reference counter of the
+ * @ev. The channel with zero reference counter will be deallocated. Don't forget
+ * to use bex_ref_channel() before call bex_platform_remove_channel() if you want
+ * to use @ch later.
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_platform_remove_channel(struct libbex_platform *pl, struct libbex_channel *ch)
+{
+	if (!pl || !ch)
+		return -EINVAL;
+
+	DBG(PLAT, bex_debugobj(pl, "removing channel %s [%p]", ch->name, ch));
+
+	list_del(&ch->channels);
+	INIT_LIST_HEAD(&ch->channels);	/* otherwise @ch still points to the list */
+
+	bex_unref_channel(ch);
+	return 0;
+}
+
+
+/**
+ * bext_platform_next_channel:
+ * @pl: platform
+ * @itr: iterator
+ * @ch: returns the next channel
+ *
+ * Returns: 0 on success, negative number in case of error or 1 at the end of list.
+ */
+int bex_platform_next_channel(struct libbex_platform *pl, struct libbex_iter *itr,
+			      struct libbex_channel **ch)
+{
+	int rc = 1;
+
+	if (!pl || !itr || !ch)
+		return -EINVAL;
+	*ch = NULL;
+
+	if (!itr->head)
+		BEX_ITER_INIT(itr, &pl->channels);
+	if (itr->p != itr->head) {
+		BEX_ITER_ITERATE(itr, *ch, struct libbex_channel, channels);
+		rc = 0;
+	}
+
+	return rc;
+}
+
+struct libbex_channel *bex_platform_get_channel(struct libbex_platform *pl, const char *name)
+{
+	struct libbex_channel *ch;
+	struct libbex_iter itr;
+
+	bex_reset_iter(&itr, BEX_ITER_FORWARD);
+
+	while (bex_platform_next_channel(pl, &itr, &ch) == 0) {
+		if (strcmp(ch->name, name) == 0)
+			return ch;
+	}
+
+	return NULL;
+}
+
+struct libbex_channel *bex_platform_get_channel_by_id(struct libbex_platform *pl, uint64_t id)
+{
+	struct libbex_channel *ch;
+	struct libbex_iter itr;
+
+	bex_reset_iter(&itr, BEX_ITER_FORWARD);
+
+	while (bex_platform_next_channel(pl, &itr, &ch) == 0) {
+		if (ch->id == id)
+			return ch;
+	}
+
+	return NULL;
+}
+
+static int subscribed_callback(struct libbex_platform *pl, struct libbex_event *ev)
+{
+	struct libbex_channel *ch;
+	struct libbex_array *ar = bex_event_get_replies(ev);
+	struct libbex_value *name = ar ? bex_array_get(ar, "channel") : NULL;
+	struct libbex_value *id = ar ? bex_array_get(ar, "chanId") : NULL;
+
+	if (!name || !id)
+		return -EINVAL;
+
+	ch = bex_platform_get_channel(pl, bex_value_get_str(name));
+	if (!ch) {
+		DBG(EVENT, bex_debugobj(ev, "unknown subscribed event for channel: %s",
+					bex_value_get_str(name)));
+		return -EINVAL;
+	}
+
+	bex_channel_set_subscribed(ch, 1);
+	bex_channel_set_id(ch, bex_value_get_u64(id));
+	return 0;
+}
+
+int bex_platform_subscribe_channel(struct libbex_platform *pl, struct libbex_channel *ch)
+{
+	int rc = 0, tries = 0;
+
+	if (!ch || !ch->subscribe || bex_channel_is_subscribed(ch))
+		return -EINVAL;
+
+	DBG(PLAT, bex_debugobj(pl, "subscribing channel %s [%p]", ch->name, ch));
+
+	/* define reply */
+	if (!bex_platform_get_event(pl, "subscribed")) {
+		struct libbex_event *ev = bex_new_event("subscribed");
+
+		bex_event_set_reply_callback(ev, subscribed_callback);
+		bex_event_add_reply(ev, bex_new_value_str("channel", NULL));
+		bex_event_add_reply(ev, bex_new_value_u64("chanId", 0));
+		bex_platform_add_event(pl, ev);
+		bex_unref_event(ev);
+	}
+
+	/* send request */
+	rc = bex_platform_send_event(pl, ch->subscribe);
+	if (rc)
+		goto done;
+
+	/* wait for reply */
+	while (!rc && !bex_channel_is_subscribed(ch) && tries < 10) {
+		rc = bex_platform_service(pl);
+		tries++;
+	}
+
+done:
+	return  rc ? rc :
+		bex_channel_is_subscribed(ch) ? 0 : -EINVAL;
+}
+
+int bex_platform_subscribe_channels(struct libbex_platform *pl)
+{
+	struct libbex_channel *ch;
+	struct libbex_iter itr;
+	int rc = 0;
+
+	if (!pl)
+		return -EINVAL;
+
+	bex_reset_iter(&itr, BEX_ITER_FORWARD);
+
+	while (bex_platform_next_channel(pl, &itr, &ch) == 0) {
+		if (bex_channel_is_subscribed(ch))
+			continue;
+
+		rc += bex_platform_subscribe_channel(pl, ch);
+	}
+
 	return rc;
 }

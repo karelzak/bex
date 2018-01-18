@@ -135,6 +135,26 @@ extern int bex_event_set_reply_callback(struct libbex_event *ev,
 extern int bex_event_set_data(struct libbex_event *ev, void *dt);
 extern void *bex_event_get_data(struct libbex_event *ev);
 
+/* channel */
+extern struct libbex_channel *bex_new_channel(const char *name);
+extern void bex_ref_channel(struct libbex_channel *ch);
+extern void bex_unref_channel(struct libbex_channel *ch);
+extern int bex_channel_set_subscribe_event(struct libbex_channel *ch, struct libbex_event *ev);
+extern struct libbex_array *bex_channel_get_replies(struct libbex_channel *ch);
+extern int bex_channel_set_reply_callback(struct libbex_channel *ch,
+		int (*fn)(struct libbex_platform *, struct libbex_channel *));
+extern int bex_channel_set_data(struct libbex_channel *ch, void *dt);
+extern void *bex_channel_get_data(struct libbex_channel *ch);
+extern int bex_channel_add_reply(struct libbex_channel *ch, struct libbex_value *va);
+extern int bex_channel_remove_reply(struct libbex_channel *ch, struct libbex_value *va);
+extern int bex_channel_update_reply(struct libbex_channel *ch, const char *str);
+extern int bex_channel_set_subscribed(struct libbex_channel *ch, int x);
+extern int bex_channel_set_id(struct libbex_channel *ch, uint64_t id);
+extern int bex_channel_is_subscribed(struct libbex_channel *ch);
+
+/* channel-ticker.c */
+extern struct libbex_channel *bex_new_ticker_channel(const char *pair);
+
 /* platform.c */
 extern struct libbex_platform *bex_new_platform(const char *uri);
 extern void bex_ref_platform(struct libbex_platform *pl);
@@ -152,7 +172,14 @@ extern int bex_platform_disconnect(struct libbex_platform *pl);
 extern int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz);
 extern int bex_platform_service(struct libbex_platform *pl);
 extern int bex_platform_receive(struct libbex_platform *pl, const char *str);
-
+extern int bex_platform_add_channel(struct libbex_platform *pl, struct libbex_channel *ch);
+extern int bex_platform_remove_channel(struct libbex_platform *pl, struct libbex_channel *ch);
+extern int bex_platform_next_channel(struct libbex_platform *pl, struct libbex_iter *itr,
+                              struct libbex_channel **ch);
+extern struct libbex_channel *bex_platform_get_channel(struct libbex_platform *pl, const char *name);
+extern struct libbex_channel *bex_platform_get_channel_by_id(struct libbex_platform *pl, uint64_t id);
+extern int bex_platform_subscribe_channel(struct libbex_platform *pl, struct libbex_channel *ch);
+extern int bex_platform_subscribe_channels(struct libbex_platform *pl);
 
 /* array.c */
 extern struct libbex_array *bex_new_array(size_t sz);
@@ -182,6 +209,10 @@ extern int64_t bex_value_get_s64(struct libbex_value *va);
 extern int bex_value_set_str(struct libbex_value *va, const char *str);
 extern struct libbex_value *bex_new_value_str(const char *name, const char *str);
 extern char *bex_value_get_str(struct libbex_value *va);
+
+extern int bex_value_set_float(struct libbex_value *va, double num);
+extern double bex_value_get_float(struct libbex_value *va);
+extern struct libbex_value *bex_new_value_float(const char *name, double n);
 
 #ifdef __cplusplus
 }

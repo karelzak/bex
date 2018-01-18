@@ -43,7 +43,10 @@ global:
 	bex_value_set_str;
 	bex_value_get_str;
 	bex_new_value_str;
-
+	bex_value_set_float;
+	bex_value_get_float;
+	bex_new_value_float;
+	 
 	bex_new_platform;
 	bex_ref_platform;
 	bex_unref_platform;
@@ -57,6 +60,30 @@ global:
 	bex_platform_service;
 	bex_platform_send_event;
 	bex_platform_receive_event;
+	bex_platform_subscribe_channel;
+	bex_platform_add_channel;
+	bex_platform_remove_channel;
+	bex_platform_next_channel;
+	bex_platform_get_channel;
+	bex_platform_get_channel_by_id;
+	bex_platform_subscribe_channel;
+	bex_platform_subscribe_channels;
+
+	bex_new_channel;
+	bex_ref_channel;
+	bex_unref_channel;
+	bex_channel_set_subscribe_event;
+	bex_channel_get_replies;
+	bex_channel_set_reply_callback;
+	bex_channel_set_data;
+	bex_channel_get_data;
+	bex_channel_add_reply;
+	bex_channel_remove_reply;
+	bex_channel_update_reply;
+	bex_channel_set_subscribed;
+	bex_channel_set_id;
+
+	bex_new_ticker_channel;
 local:
 	*;
 };

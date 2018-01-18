@@ -2,12 +2,12 @@ bex_ldadd = $(LDADD) libbex.la
 bex_cflags = $(AM_CFLAGS) -I$(libbex_incdir)
 bex_ldflags = $(AM_LDFLAGS)
 
-bin_PROGRAMS += bex-fetch bex-ping
+bin_PROGRAMS += bex-ticker bex-ping
 
-bex_fetch_SOURCES = src/fetch.c
-bex_fetch_LDADD = $(bex_ldadd)
-bex_fetch_CFLAGS = $(bex_cflags)
-bex_fetch_LDFLAGS = $(bex_ldflags)
+bex_ticker_SOURCES = src/ticker.c
+bex_ticker_LDADD = $(bex_ldadd)
+bex_ticker_CFLAGS = $(bex_cflags)
+bex_ticker_LDFLAGS = $(bex_ldflags)
 
 bex_ping_SOURCES = src/ping.c
 bex_ping_LDADD = $(bex_ldadd)
