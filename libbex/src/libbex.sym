@@ -71,6 +71,8 @@ global:
 	bex_platform_get_channel_by_id;
 	bex_platform_subscribe_channel;
 	bex_platform_subscribe_channels;
+	bex_platform_unsubscribe_channel;
+	bex_platform_unsubscribe_channels;
 
 	bex_new_channel;
 	bex_ref_channel;

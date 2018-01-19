@@ -10,7 +10,9 @@
 #include "c.h"
 #include "nls.h"
 #include "xalloc.h"
+#include "strutils.h"
 
+static int count;
 
 static int ticker_callback(struct libbex_platform *pl, struct libbex_channel *ch)
 {
@@ -35,18 +37,22 @@ static void __attribute__((__noreturn__)) usage(void)
 
 int main(int argc, char **argv)
 {
-	int c;
+	int c, count_max = 0;
 	const char *uri = LIBBEX_DEFAULT_URI;
 	struct libbex_platform *pl;
 	static const struct option longopts[] = {
 		{ "help",	no_argument,		0, 'h' },
 		{ "version",	no_argument,		0, 'V' },
+		{ "count",	required_argument,	0, 'c' },
 		{ NULL, 0, 0, 0 },
 	};
 
-	while ((c = getopt_long(argc, argv, "+hV", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:hV", longopts, NULL)) != -1) {
 
 		switch(c) {
+		case 'c':
+			count_max = strtos64_or_err(optarg, _("failed to parse --count argument"));
+			break;
 		case 'v':
 		case 'V':
 			printf(BEX_VERSION "\n");
@@ -58,8 +64,6 @@ int main(int argc, char **argv)
 			errtryhelp(1);
 		}
 	}
-
-
 
 	bex_init_debug(0);
 
@@ -84,9 +88,14 @@ int main(int argc, char **argv)
 
 	bex_platform_subscribe_channels(pl);
 
-	while (1)
+	while (1) {
+		if (count_max && count >= count_max)
+			break;
 		bex_platform_service(pl);
+		count++;
+	}
 
+//	bex_platform_unsubscribe_channels(pl);
 done:
 	bex_unref_platform(pl);
 

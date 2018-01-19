@@ -1,4 +1,4 @@
-bex_ldadd = $(LDADD) libbex.la
+bex_ldadd = $(LDADD) libbex.la libcommon.la
 bex_cflags = $(AM_CFLAGS) -I$(libbex_incdir)
 bex_ldflags = $(AM_LDFLAGS)
 

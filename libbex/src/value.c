@@ -3,10 +3,21 @@
 
 void bex_reset_value(struct libbex_value *va)
 {
-	if (va->type == BEX_TYPE_STR)
+	switch (va->type) {
+	case BEX_TYPE_STR:
 		free(va->data.str);
-
-	memset(&va->data, 0, sizeof(va->data));
+		va->data.str = NULL;
+		break;
+	case BEX_TYPE_U64:
+		va->data.u64 = 0;
+		break;
+	case BEX_TYPE_S64:
+		va->data.s64 = 0;
+		break;
+	case BEX_TYPE_FLOAT:
+		va->data.fl = 0;
+		break;
+	}
 }
 
 static void free_value(struct libbex_value *va)
@@ -14,9 +25,9 @@ static void free_value(struct libbex_value *va)
 	if (!va)
 		return;
 
-	DBG(VAL, bex_debugobj(va, "free [name=%s]", va->name));
-	free(va->name);
+	DBG(VAL, bex_debugobj(va, "   free [name=%s]", va->name));
 	bex_reset_value(va);
+	free(va->name);
 	free(va);
 }
 

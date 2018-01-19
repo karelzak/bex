@@ -234,6 +234,7 @@ int bex_event_update_reply(struct libbex_event *ev, const char *str)
 	if (!ev || !str)
 		return -EINVAL;
 
+	DBG(EVENT, bex_debugobj(ev, "updating reply"));
 	return bex_array_fill_from_string(ev->reply, str);
 }
 
@@ -245,6 +246,7 @@ int bex_event_update_reply(struct libbex_event *ev, const char *str)
  */
 void bex_event_reset_reply(struct libbex_event *ev)
 {
+	DBG(EVENT, bex_debugobj(ev, "reseting reply"));
 	bex_reset_array(ev->reply);
 }
 

@@ -14,7 +14,7 @@ static void free_array(struct libbex_array *ar)
 	if (!ar)
 		return;
 
-	DBG(ARY, bex_debugobj(ar, "free"));
+	DBG(ARY, bex_debugobj(ar, "free [items=%zu]", ar->nitems));
 	for (i = 0; i < ar->nitems; i++)
 		bex_unref_value(ar->items[i]);
 
@@ -94,7 +94,7 @@ int bex_array_add(struct libbex_array *ar, struct libbex_value *va)
 		size_t newsz = ar->nalloc + 10;
 
 		DBG(ARY, bex_debugobj(ar, " resize %zu -> %zu", ar->nalloc, newsz));
-		tmp = realloc(ar->items, ar->nalloc + 1);
+		tmp = realloc(ar->items, newsz * sizeof(struct libbex_value *));
 		if (!tmp)
 			return -ENOMEM;
 		ar->items = tmp;
@@ -105,7 +105,7 @@ int bex_array_add(struct libbex_array *ar, struct libbex_value *va)
 	ar->items[ar->nitems] = va;
 	ar->nitems++;
 
-	DBG(ARY, bex_debugobj(ar, " add %s [%p]", va->name, va));
+	DBG(ARY, bex_debugobj(ar, " add '%s' [%p]", va->name, va));
 	return 0;
 }
 
@@ -124,17 +124,23 @@ int bex_array_remove(struct libbex_array *ar, struct libbex_value *va)
 		return -EINVAL;
 
 	for (i = 0; i < ar->nitems; i++) {
-		if (ar->items[i] == va) {
-			if (i < ar->nitems - 1)
-				memmove(ar->items[i], ar->items[i+1], ar->nitems - i - 1);
-			ar->nitems--;
-			DBG(ARY, bex_debugobj(ar, " remove %s [%p]", va->name, va));
-			bex_unref_value(va);
-			return 0;
-		}
+		if (ar->items[i] == va)
+			break;
 	}
 
-	return -EINVAL;
+	if (i == ar->nitems)
+		return -EINVAL;
+
+	/* move */
+	for (; i < ar->nitems - 1; i++)
+		ar->items[i] = ar->items[i + 1];
+
+	ar->items[ar->nitems - 1] = NULL;	/* last */
+	ar->nitems--;
+
+	DBG(ARY, bex_debugobj(ar, "  remove '%s' [%p]", va->name, va));
+	bex_unref_value(va);
+	return 0;
 }
 
 /**
@@ -145,19 +151,25 @@ int bex_array_remove(struct libbex_array *ar, struct libbex_value *va)
  */
 void bex_reset_array(struct libbex_array *ar)
 {
-	size_t i;
+	size_t i = 0;
 
 	if (!ar)
 		return;
 
-	for (i = 0; i < ar->nitems; i++) {
+	DBG(ARY, bex_debugobj(ar, " reseting [nitems=%zu]", ar->nitems));
+
+	do {
 		struct libbex_value *va = ar->items[i];
 
 		if (va->generated)
 			bex_array_remove(ar, va);
-		else
+		else {
 			bex_reset_value(va);
-	}
+			i++;
+		}
+	} while (i < ar->nitems);
+
+	DBG(ARY, bex_debugobj(ar, " reset done [nitems=%zu]", ar->nitems));
 }
 
 /**

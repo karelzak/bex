@@ -191,6 +191,9 @@ extern struct libbex_channel *bex_platform_get_channel_by_id(struct libbex_platf
 extern int bex_platform_subscribe_channel(struct libbex_platform *pl, struct libbex_channel *ch);
 extern int bex_platform_subscribe_channels(struct libbex_platform *pl);
 
+extern int bex_platform_unsubscribe_channel(struct libbex_platform *pl, struct libbex_channel *ch);
+extern int bex_platform_unsubscribe_channels(struct libbex_platform *pl);
+
 /* array.c */
 extern struct libbex_array *bex_new_array(size_t sz);
 extern void bex_ref_array(struct libbex_array *ar);

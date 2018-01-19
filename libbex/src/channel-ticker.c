@@ -52,7 +52,7 @@ struct libbex_channel *bex_new_ticker_channel(const char *symbol)
 	bex_channel_set_verify_callback(ch, is_ticker_event);
 	bex_channel_set_symbol(ch, symbol);
 
-	/* reply definition */
+	/* reply definition *
 	bex_channel_add_reply(ch, bex_new_value_float("FRR", 0));
 	bex_channel_add_reply(ch, bex_new_value_float("BID", 0));
 	bex_channel_add_reply(ch, bex_new_value_u64(  "BID_PERIOD", 0));
@@ -66,7 +66,7 @@ struct libbex_channel *bex_new_ticker_channel(const char *symbol)
 	bex_channel_add_reply(ch, bex_new_value_float("VOLUME", 0));
 	bex_channel_add_reply(ch, bex_new_value_float("HIGH", 0));
 	bex_channel_add_reply(ch, bex_new_value_float("LOW", 0));
-
+	*/
 
 	return ch;
 err:

@@ -518,6 +518,7 @@ int bex_platform_subscribe_channel(struct libbex_platform *pl, struct libbex_cha
 		struct libbex_event *ev = bex_new_event("subscribed");
 
 		bex_event_set_reply_callback(ev, subscribed_callback);
+		bex_event_add_reply(ev, bex_new_value_str("event", NULL));
 		bex_event_add_reply(ev, bex_new_value_str("channel", NULL));
 		bex_event_add_reply(ev, bex_new_value_u64("chanId", 0));
 		bex_platform_add_event(pl, ev);
@@ -549,14 +550,104 @@ int bex_platform_subscribe_channels(struct libbex_platform *pl)
 	if (!pl)
 		return -EINVAL;
 
-	bex_reset_iter(&itr, BEX_ITER_FORWARD);
+	DBG(PLAT, bex_debugobj(pl, "subscribing all channel"));
 
+	bex_reset_iter(&itr, BEX_ITER_FORWARD);
 	while (bex_platform_next_channel(pl, &itr, &ch) == 0) {
 		if (bex_channel_is_subscribed(ch))
 			continue;
-
 		rc += bex_platform_subscribe_channel(pl, ch);
 	}
+	return rc;
+}
 
+static int unsubscribed_callback(struct libbex_platform *pl, struct libbex_event *ev)
+{
+	struct libbex_channel *ch;
+	struct libbex_array *ar = bex_event_get_replies(ev);
+	struct libbex_value *id = ar ? bex_array_get(ar, "chanId") : NULL;
+	int rc = -EINVAL;
+
+	if (!id)
+		return -EINVAL;
+
+	ch = bex_platform_get_channel_by_id(pl, bex_value_get_u64(id));
+	if (!ch) {
+		DBG(EVENT, bex_debugobj(ev, "unknown unsubscribed event"));
+		goto done;
+	}
+
+	bex_channel_set_subscribed(ch, 0);
+	bex_channel_update_heartbeat(ch);
+	rc = 0;
+done:
+	bex_event_reset_reply(ev);
+	return rc;
+}
+
+int bex_platform_unsubscribe_channel(struct libbex_platform *pl, struct libbex_channel *ch)
+{
+	int rc = 0, tries = 0;
+	struct libbex_event *ev;
+
+	if (!ch || !bex_channel_is_subscribed(ch))
+		return -EINVAL;
+
+	DBG(PLAT, bex_debugobj(pl, "unsubscribing channel %s [%p]", ch->name, ch));
+
+	/* define reply */
+	if (!bex_platform_get_event(pl, "unsubscribed")) {
+		ev = bex_new_event("unsubscribed");
+		if (!ev)
+			return -ENOMEM;
+
+		bex_event_set_reply_callback(ev, unsubscribed_callback);
+		bex_event_add_reply(ev, bex_new_value_str("event", NULL));
+		bex_event_add_reply(ev, bex_new_value_str("status", NULL));
+		bex_event_add_reply(ev, bex_new_value_u64("chanId", 0));
+		bex_platform_add_event(pl, ev);
+		bex_unref_event(ev);
+	}
+
+	/* define unsubscribe request */
+	ev = bex_new_event("unsubscribe");
+	if (!ev)
+		return -ENOMEM;
+
+	bex_event_add_value(ev, bex_new_value_u64("chanId", ch->id));
+
+	/* send request */
+	rc = bex_platform_send_event(pl, ev);
+	if (rc)
+		goto done;
+
+	/* wait for reply */
+	while (!rc && bex_channel_is_subscribed(ch) && tries < 10) {
+		rc = bex_platform_service(pl);
+		tries++;
+	}
+
+done:
+	return  rc ? rc :
+		!bex_channel_is_subscribed(ch) ? 0 : -EINVAL;
+}
+
+int bex_platform_unsubscribe_channels(struct libbex_platform *pl)
+{
+	struct libbex_channel *ch;
+	struct libbex_iter itr;
+	int rc = 0;
+
+	if (!pl)
+		return -EINVAL;
+
+	DBG(PLAT, bex_debugobj(pl, "subscribing all channel"));
+
+	bex_reset_iter(&itr, BEX_ITER_FORWARD);
+	while (bex_platform_next_channel(pl, &itr, &ch) == 0) {
+		if (!bex_channel_is_subscribed(ch))
+			continue;
+		rc += bex_platform_unsubscribe_channel(pl, ch);
+	}
 	return rc;
 }

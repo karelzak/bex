@@ -11,6 +11,8 @@ static void free_channel(struct libbex_channel *ch)
 	bex_unref_array(ch->reply);
 	free(ch->name);
 	free(ch->symbol);
+
+	DBG(CHAN, bex_debugobj(ch, "done"));
 	free(ch);
 }
 
