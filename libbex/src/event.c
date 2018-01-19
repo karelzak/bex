@@ -236,3 +236,15 @@ int bex_event_update_reply(struct libbex_event *ev, const char *str)
 
 	return bex_array_fill_from_string(ev->reply, str);
 }
+
+/**
+ * bex_event_reset_reply:
+ * @ev: event
+ *
+ * Removes on the fly-generated variables and zeroize another variables.
+ */
+void bex_event_reset_reply(struct libbex_event *ev)
+{
+	bex_reset_array(ev->reply);
+}
+

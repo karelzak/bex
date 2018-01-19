@@ -473,23 +473,35 @@ struct libbex_channel *bex_platform_get_channel_by_id(struct libbex_platform *pl
 static int subscribed_callback(struct libbex_platform *pl, struct libbex_event *ev)
 {
 	struct libbex_channel *ch;
-	struct libbex_array *ar = bex_event_get_replies(ev);
-	struct libbex_value *name = ar ? bex_array_get(ar, "channel") : NULL;
-	struct libbex_value *id = ar ? bex_array_get(ar, "chanId") : NULL;
+	struct libbex_array *ar;
+	struct libbex_value *id;
+	struct libbex_iter itr;
+	int rc = -EINVAL;
 
-	if (!name || !id)
-		return -EINVAL;
-
-	ch = bex_platform_get_channel(pl, bex_value_get_str(name));
-	if (!ch) {
-		DBG(EVENT, bex_debugobj(ev, "unknown subscribed event for channel: %s",
-					bex_value_get_str(name)));
-		return -EINVAL;
+	bex_reset_iter(&itr, BEX_ITER_FORWARD);
+	while (bex_platform_next_channel(pl, &itr, &ch) == 0) {
+		if (bex_channel_verify_event(ch, ev))
+			break;
 	}
 
-	bex_channel_set_subscribed(ch, 1);
+	if (!ch) {
+		DBG(EVENT, bex_debugobj(ev, "unknown subscribed event"));
+		goto done;
+	}
+
+	ar = bex_event_get_replies(ev);
+	if (!ar)
+		goto done;
+
+	id = bex_array_get(ar, "chanId");
 	bex_channel_set_id(ch, bex_value_get_u64(id));
-	return 0;
+
+	bex_channel_set_subscribed(ch, 1);
+	bex_channel_update_heartbeat(ch);
+	rc = 0;
+done:
+	bex_event_reset_reply(ev);
+	return rc;
 }
 
 int bex_platform_subscribe_channel(struct libbex_platform *pl, struct libbex_channel *ch)

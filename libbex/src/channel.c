@@ -10,6 +10,7 @@ static void free_channel(struct libbex_channel *ch)
 	bex_unref_event(ch->subscribe);
 	bex_unref_array(ch->reply);
 	free(ch->name);
+	free(ch->symbol);
 	free(ch);
 }
 
@@ -85,7 +86,7 @@ int bex_channel_set_subscribe_event(struct libbex_channel *ch, struct libbex_eve
 	bex_unref_event(ch->subscribe);		/* old */
 	ch->subscribe = ev;
 
-	DBG(CHAN, bex_debugobj(ch, "set subscribe event to %s [%p]", ev->name, ev));
+	DBG(CHAN, bex_debugobj(ch, "set %s subscribe event to %s [%p]", ch->name, ev->name, ev));
 	return 0;
 }
 
@@ -116,6 +117,30 @@ int bex_channel_set_reply_callback(struct libbex_channel *ch,
 		return -EINVAL;
 	ch->callback = fn;
 	return 0;
+}
+
+/**
+ * bex_channel_set_verify_callback
+ * @ch: channel
+ * @fn: callback function
+ *
+ * Returns: 0 or <0 on error
+ */
+int bex_channel_set_verify_callback(struct libbex_channel *ch,
+		int (*fn)(struct libbex_channel *, struct libbex_event *))
+{
+	if (!ch)
+		return -EINVAL;
+	ch->verify = fn;
+	return 0;
+}
+
+int bex_channel_verify_event(struct libbex_channel *ch, struct libbex_event *ev)
+{
+	if (!ch || !ch->verify)
+		return 0;
+
+	return ch->verify(ch, ev);
 }
 
 /**
@@ -216,6 +241,9 @@ int bex_channel_set_subscribed(struct libbex_channel *ch, int x)
 	if (!ch)
 		return -EINVAL;
 	ch->subscribed = x;
+
+	DBG(CHAN, bex_debugobj(ch, "change %s subscribed status to %s",
+			ch->name, ch->subscribed ? "TRUE" : "FALSE"));
 	return 0;
 }
 
@@ -244,3 +272,53 @@ int bex_channel_set_id(struct libbex_channel *ch, uint64_t id)
 	ch->id = id;
 	return 0;
 }
+
+int bex_channel_update_heartbeat(struct libbex_channel *ch)
+{
+	DBG(CHAN, bex_debugobj(ch, "update heartbeat"));
+	gettimeofday(&ch->last_update, NULL);
+	return 0;
+}
+
+const struct timeval *bex_channel_get_heartbeat(struct libbex_channel *ch)
+{
+	return &ch->last_update;
+}
+
+/**
+ * bex_channel_set_symbol
+ * @ch: channel
+ * @sy: symbol
+ *
+ * Returns: 0 or <0 on error
+ */
+int bex_channel_set_symbol(struct libbex_channel *ch, const char *sy)
+{
+	char *p = NULL;
+
+	if (!ch)
+		return -EINVAL;
+
+	if (sy) {
+		p = strdup(sy);
+		if (!p)
+			return -ENOMEM;
+	}
+
+	free(ch->symbol);
+	ch->symbol = p;
+	return 0;
+}
+
+/**
+ *
+ * bex_channel_get_symbol
+ * @ch: channel
+ *
+ * Returns: symbol string
+ */
+const char *bex_channel_get_symbol(struct libbex_channel *ch)
+{
+	return ch ? ch->symbol : NULL;
+}
+

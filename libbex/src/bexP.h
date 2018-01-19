@@ -6,6 +6,7 @@
 #include "debug.h"
 
 #include <stdio.h>
+#include <sys/time.h>
 
 #include "libbex.h"
 
@@ -71,8 +72,10 @@ struct libbex_value {
 		char		*str;
 		uint64_t	u64;
 		int64_t		s64;
-		double		fl;
+		long double	fl;
 	} data;
+
+	unsigned int	generated : 1;
 };
 
 struct libbex_array {
@@ -87,9 +90,13 @@ struct libbex_array {
 struct libbex_channel {
 	int	refcount;
 	char	*name;
+	char	*symbol;
 	uint64_t id;
 
+	struct timeval	last_update;
+
 	int	(*callback)(struct libbex_platform *, struct libbex_channel *);
+	int     (*verify)(struct libbex_channel *, struct libbex_event *);
 	void	*data;
 
 	struct libbex_event	*subscribe;
@@ -133,7 +140,10 @@ struct libbex_platform {
 	struct list_head	channels;
 
 };
-;
+
+/* value.c */
+extern struct libbex_value *__bex_new_value(char *name);
+
 /* wss.c */
 extern int wss_is_connected(struct libbex_platform *pl);
 extern int wss_connect(struct libbex_platform *pl);

@@ -128,6 +128,7 @@ extern int bex_event_remove_value(struct libbex_event *ev, struct libbex_value *
 extern int bex_event_add_reply(struct libbex_event *ev, struct libbex_value *va);
 extern int bex_event_remove_reply(struct libbex_event *ev, struct libbex_value *va);
 extern int bex_event_update_reply(struct libbex_event *ev, const char *str);
+extern void bex_event_reset_reply(struct libbex_event *ev);
 extern struct libbex_array *bex_event_get_values(struct libbex_event *ev);
 extern struct libbex_array *bex_event_get_replies(struct libbex_event *ev);
 extern int bex_event_set_reply_callback(struct libbex_event *ev,
@@ -143,6 +144,8 @@ extern int bex_channel_set_subscribe_event(struct libbex_channel *ch, struct lib
 extern struct libbex_array *bex_channel_get_replies(struct libbex_channel *ch);
 extern int bex_channel_set_reply_callback(struct libbex_channel *ch,
 		int (*fn)(struct libbex_platform *, struct libbex_channel *));
+extern int bex_channel_set_verify_callback(struct libbex_channel *ch,
+                int (*fn)(struct libbex_channel *, struct libbex_event *));
 extern int bex_channel_set_data(struct libbex_channel *ch, void *dt);
 extern void *bex_channel_get_data(struct libbex_channel *ch);
 extern int bex_channel_add_reply(struct libbex_channel *ch, struct libbex_value *va);
@@ -151,9 +154,16 @@ extern int bex_channel_update_reply(struct libbex_channel *ch, const char *str);
 extern int bex_channel_set_subscribed(struct libbex_channel *ch, int x);
 extern int bex_channel_set_id(struct libbex_channel *ch, uint64_t id);
 extern int bex_channel_is_subscribed(struct libbex_channel *ch);
+extern int bex_channel_verify_event(struct libbex_channel *ch, struct libbex_event *ev);
+
+extern int bex_channel_update_heartbeat(struct libbex_channel *ch);
+extern const struct timeval *bex_channel_get_heartbeat(struct libbex_channel *ch);
+
+extern int bex_channel_set_symbol(struct libbex_channel *ch, const char *sy);
+extern const char *bex_channel_get_symbol(struct libbex_channel *ch);
 
 /* channel-ticker.c */
-extern struct libbex_channel *bex_new_ticker_channel(const char *pair);
+extern struct libbex_channel *bex_new_ticker_channel(const char *symbol);
 
 /* platform.c */
 extern struct libbex_platform *bex_new_platform(const char *uri);
@@ -187,6 +197,7 @@ extern void bex_ref_array(struct libbex_array *ar);
 extern void bex_unref_array(struct libbex_array *ar);
 extern int bex_array_add(struct libbex_array *ar, struct libbex_value *va);
 extern int bex_array_remove(struct libbex_array *ar, struct libbex_value *va);
+extern void bex_reset_array(struct libbex_array *ar);
 extern struct libbex_value *bex_array_get(struct libbex_array *ar, const char *name);
 extern struct libbex_value *bex_array_nget(struct libbex_array *ar, const char *name, size_t n);
 extern int bex_array_to_stream(struct libbex_array *ar, FILE *stream);
@@ -195,8 +206,10 @@ extern int bex_array_fill_from_string(struct libbex_array *ar, const char *str);
 
 /* value */
 extern struct libbex_value *bex_new_value(const char *name);
+extern void bex_reset_value(struct libbex_value *va);
 extern void bex_ref_value(struct libbex_value *va);
 extern void bex_unref_value(struct libbex_value *va);
+extern int bex_value_set_generated(struct libbex_value *va, int status);
 
 extern int bex_value_set_u64(struct libbex_value *va, uint64_t num);
 extern struct libbex_value *bex_new_value_u64(const char *name, uint64_t n);
@@ -210,9 +223,9 @@ extern int bex_value_set_str(struct libbex_value *va, const char *str);
 extern struct libbex_value *bex_new_value_str(const char *name, const char *str);
 extern char *bex_value_get_str(struct libbex_value *va);
 
-extern int bex_value_set_float(struct libbex_value *va, double num);
-extern double bex_value_get_float(struct libbex_value *va);
-extern struct libbex_value *bex_new_value_float(const char *name, double n);
+extern int bex_value_set_float(struct libbex_value *va, long double num);
+extern long double bex_value_get_float(struct libbex_value *va);
+extern struct libbex_value *bex_new_value_float(const char *name, long double n);
 
 #ifdef __cplusplus
 }

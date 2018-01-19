@@ -5,6 +5,7 @@
 #include <inttypes.h>
 
 #include "bexP.h"
+#include "strutils.h"
 
 static void free_array(struct libbex_array *ar)
 {
@@ -137,6 +138,29 @@ int bex_array_remove(struct libbex_array *ar, struct libbex_value *va)
 }
 
 /**
+ * bex_reset_array:
+ * @ar: array
+ *
+ * Removes generated values, zeroize/free the rest.
+ */
+void bex_reset_array(struct libbex_array *ar)
+{
+	size_t i;
+
+	if (!ar)
+		return;
+
+	for (i = 0; i < ar->nitems; i++) {
+		struct libbex_value *va = ar->items[i];
+
+		if (va->generated)
+			bex_array_remove(ar, va);
+		else
+			bex_reset_value(va);
+	}
+}
+
+/**
  * bex_array_is_empty:
  * @ar: array
  *
@@ -208,7 +232,7 @@ int bex_array_to_stream(struct libbex_array *ar, FILE *stream)
 		struct libbex_value *va = ar->items[i];
 
 		if (i > 0)
-			fputs(", ", stream);
+			fputs(",", stream);
 
 		switch (va->type) {
 		case BEX_TYPE_STR:
@@ -219,6 +243,9 @@ int bex_array_to_stream(struct libbex_array *ar, FILE *stream)
 			break;
 		case BEX_TYPE_S64:
 			fprintf(stream, "\"%s\": %jd", va->name, va->data.s64);
+			break;
+		case BEX_TYPE_FLOAT:
+			fprintf(stream, "\"%s\": %Lg", va->name, va->data.fl);
 			break;
 		default:
 			break;
@@ -309,17 +336,32 @@ int bex_array_fill_from_string(struct libbex_array *ar, const char *str)
 {
 	char *name, *value, *p = (char *) str;
 	size_t namesz, valsz;
-
+	struct libbex_value *va = NULL;
 
 	if (bex_array_is_empty(ar))
 		return 0;
 
 	while (parse_next(&p, &name, &namesz, &value, &valsz) == 0) {
-		struct libbex_value *va = bex_array_nget(ar, name, namesz);
 		char *end = NULL;
 
-		if (!va)
-			continue;
+		va = bex_array_nget(ar, name, namesz);
+		if (!va) {
+			/* add value on the fly */
+			char *vname = strndup(name, namesz);
+
+			if (!vname)
+				goto err_gen;
+
+			va = __bex_new_value(vname);
+			if (!va)
+				goto err_gen;
+
+			va->type = BEX_TYPE_STR;
+			if (bex_array_add(ar, va))
+				goto err_gen;
+			bex_value_set_generated(va, 1);
+			bex_unref_value(va);
+		}
 
 		errno = 0;
 
@@ -338,11 +380,19 @@ int bex_array_fill_from_string(struct libbex_array *ar, const char *str)
 			if (errno || value == end)
 				DBG(ARY, bex_debugobj(ar, "strtosmax() failed"));
 			break;
+		case BEX_TYPE_FLOAT:
+			va->data.fl = strtold(value, &end);
+			if (errno || value == end)
+				DBG(ARY, bex_debugobj(ar, "strtold() failed"));
+			break;
 		default:
 			break;
 		}
 	}
 
 	return 0;
+err_gen:
+	bex_unref_value(va);
+	return -ENOMEM;
 }
 
