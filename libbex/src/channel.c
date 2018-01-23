@@ -12,6 +12,7 @@ static void free_channel(struct libbex_channel *ch)
 	bex_unref_array(ch->reply);
 	free(ch->name);
 	free(ch->symbol);
+	free(ch->inbuff);
 
 	DBG(CHAN, bex_debugobj(ch, "done"));
 	free(ch);
@@ -349,3 +350,120 @@ int bex_is_channel_string(const char *str, uint64_t *id)
 	return 1;
 }
 
+/**
+ * bex_channel_update_inbuff:
+ * @ch: channel
+ * @str: input data
+ *
+ * Copy @str to channel input buffer.
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_channel_update_inbuff(struct libbex_channel *ch, const char *str)
+{
+	size_t len;
+	int rc = -ENOMEM;
+
+	if (!ch)
+		return -EINVAL;
+
+	DBG(CHAN, bex_debugobj(ch, "update inbuff"));
+	len = strlen(str);
+
+	/* TODO: muttex lock */
+
+	if (ch->inbuffsiz < len) {
+		size_t newsz = ((len + 512) >> 9) << 9;		/* align */
+		void *tmp = realloc(ch->inbuff, newsz);
+
+		if (!tmp)
+			goto done;
+
+		ch->inbuff = tmp;
+		ch->inbuffsiz = newsz;
+		DBG(CHAN, bex_debugobj(ch, " new buffer size %zu", newsz));
+	}
+
+	memcpy(ch->inbuff, str, len + 1);
+	rc = 0;
+	/* TODO: unlock */
+
+done:
+	return rc;
+}
+
+
+/* [ data ...],[ data ...], ... */
+static int process_data(struct libbex_channel *ch, const char *str)
+{
+	const char *p = str;
+	int rc = 0;
+
+	DBG(CHAN, bex_debugobj(ch, "processing data..."));
+
+	while (rc == 0 && p && *p == '[') {
+		char *next = NULL;
+
+		/* read one "[..data..]" segment from @p */
+		rc = bex_array_fill_unnamed_from_string(ch->reply, p, &next);
+		if (rc || !next)
+			break;
+
+		p = skip_space(next);		/* ,[ */
+		if (*p == ',')
+			p = skip_space(p + 1);
+
+		if (ch->callback)
+			rc = ch->callback(NULL, ch);
+	}
+
+	DBG(CHAN, bex_debugobj(ch, "processing data done [rc=%d]", rc));
+	return rc;
+}
+
+/**
+ * bex_channel_wakeup:
+ * @ch: channel
+ *
+ * Process channel inbuff, call callback, etc.
+ *
+ * Returns: 0 on success or negative number in case of error.
+ */
+int bex_channel_wakeup(struct libbex_channel *ch)
+{
+	const char *p;
+	int rc = 0;
+
+	if (!ch)
+		return -EINVAL;
+
+	DBG(CHAN, bex_debugobj(ch, "wakeup channel"));
+
+	if (!ch->inbuff || !*ch->inbuff)
+		goto done;
+
+	p = strchr(ch->inbuff, ',');		/* [CHANNEL_ID,  */
+	if (!p)
+		goto done;
+
+	p = skip_space(p + 1);
+
+	switch (*p) {
+	case '"':
+		if (strncmp(p, "\"hb\"", 4) == 0) {		/* "hb"] */
+			p = skip_space(p + 4);
+			if (*p == ']')
+				bex_channel_update_heartbeat(ch);
+		} else
+			DBG(CHAN, bex_debugobj(ch, "unsupported channel reply"));
+		break;
+	case '[':
+		rc = process_data(ch, p);
+		break;
+	}
+
+done:
+	DBG(CHAN, bex_debugobj(ch, "wakeup data done [rc=%d]", rc));
+	*ch->inbuff = '\0';
+	return rc;
+}

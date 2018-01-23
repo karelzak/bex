@@ -267,6 +267,9 @@ int bex_array_to_stream(struct libbex_array *ar, FILE *stream)
 	return 0;
 }
 
+/*
+ * returns next NAME and VALUE pair from { name=value, ... } string
+ */
 static int parse_next(char **optstr, char **name, size_t *namesz,
 				char **value, size_t *valsz)
 {
@@ -344,18 +347,19 @@ error:
 	return -1;
 }
 
+/*
+ * Fill array from { name: data, ... } string
+ */
 int bex_array_fill_from_string(struct libbex_array *ar, const char *str)
 {
 	char *name, *value, *p = (char *) str;
 	size_t namesz, valsz;
 	struct libbex_value *va = NULL;
+	int rc;
 
-	if (bex_array_is_empty(ar))
-		return 0;
+	DBG(ARY, bex_debugobj(ar, "filling from string"));
 
 	while (parse_next(&p, &name, &namesz, &value, &valsz) == 0) {
-		char *end = NULL;
-
 		va = bex_array_nget(ar, name, namesz);
 		if (!va) {
 			/* add value on the fly */
@@ -375,36 +379,104 @@ int bex_array_fill_from_string(struct libbex_array *ar, const char *str)
 			bex_unref_value(va);
 		}
 
-		errno = 0;
-
-		switch (va->type) {
-		case BEX_TYPE_STR:
-			free(va->data.str);
-			va->data.str = strndup(value, valsz);
+		rc = bex_value_set_from_string(va, value, valsz);
+		if (rc)
 			break;
-		case BEX_TYPE_U64:
-			va->data.u64 = strtoumax(value, &end, 10);
-			if (errno || value == end)
-				DBG(ARY, bex_debugobj(ar, "strtoumax() failed"));
-			break;
-		case BEX_TYPE_S64:
-			va->data.s64 = strtoimax(value, &end, 10);
-			if (errno || value == end)
-				DBG(ARY, bex_debugobj(ar, "strtosmax() failed"));
-			break;
-		case BEX_TYPE_FLOAT:
-			va->data.fl = strtold(value, &end);
-			if (errno || value == end)
-				DBG(ARY, bex_debugobj(ar, "strtold() failed"));
-			break;
-		default:
-			break;
-		}
 	}
 
-	return 0;
+	return rc;
 err_gen:
 	bex_unref_value(va);
 	return -ENOMEM;
+}
+
+/*
+ * returns next VALUE  from [ value, ... ] string
+ */
+static int parse_next_unnamed(char **optstr, char **value, size_t *valsz)
+{
+	int open_quote = 0;
+	char *start = NULL, *stop = NULL, *p, *sep = NULL;
+	char *optstr0;
+
+	optstr0 = *optstr;
+
+	if (value)
+		*value = NULL;
+	if (valsz)
+		*valsz = 0;
+
+	while (optstr0 && *optstr0 == ',')
+		optstr0++;
+
+	for (p = optstr0; p && *p; p++) {
+		if (!start && !stop && (isspace(*p) || *p == '[' || *p == ']'))
+			continue;
+		if (!start)
+			start = p;		/* beginning of the option item */
+		if (*p == '"')
+			open_quote ^= 1;	/* reverse the status */
+		if (open_quote)
+			continue;		/* still in quoted block */
+		if (!stop && p > start && *p == ',')
+			stop = p;		/* terminate the option item */
+		else if (*(p + 1) == '\0' || *(p + 1) == ']')
+			stop = p;		/* end of optstr */
+		if (!start || !stop)
+			continue;
+		if (stop <= start)
+			goto error;
+
+		*optstr = *stop ? stop + 1 : stop;
+
+		if (*start == '"')
+			start++;
+		if (*stop == '"')
+			stop--;
+
+		if (value)
+			*value = start;
+		if (valsz)
+			*valsz = (stop - sep) + 1;
+		return 0;
+	}
+
+	return 1;				/* end of optstr */
+error:
+	DBG(ARY, bex_debug("failed to parse >>>%s<<<", *optstr));
+	return -1;
+}
+
+
+int bex_array_fill_unnamed_from_string(struct libbex_array *ar, const char *str, char **next)
+{
+	char *p = (char *) str;
+	int rc = 0;
+	size_t i;
+
+	if (bex_array_is_empty(ar))
+		return -EINVAL;
+
+	DBG(ARY, bex_debugobj(ar, "filling from unnamed string"));
+
+	for (i = 0; i < ar->nitems; i++) {
+		struct libbex_value *va = ar->items[i];
+		char *value;
+		size_t valsz;
+
+		if (parse_next_unnamed(&p, &value, &valsz) != 0)
+			break;
+
+		DBG(ARY, bex_debugobj(ar, "  %s=%s", va->name, value));
+		rc = bex_value_set_from_string(va, value, valsz);
+		if (rc)
+			break;
+	}
+
+	if (*p == ']' && next )
+		*next = p + 1;
+
+	DBG(ARY, bex_debugobj(ar, "done [rc=%d]", rc));
+	return rc;
 }
 

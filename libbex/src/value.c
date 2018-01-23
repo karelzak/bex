@@ -1,5 +1,6 @@
 
 #include "bexP.h"
+#include <inttypes.h>
 
 void bex_reset_value(struct libbex_value *va)
 {
@@ -193,4 +194,40 @@ struct libbex_value *bex_new_value_float(const char *name, long double n)
 	if (va)
 		bex_value_set_float(va, n);
 	return va;
+}
+
+int bex_value_set_from_string(struct libbex_value *va, const char *str, size_t sz)
+{
+	char *end = NULL;
+
+	if (!va)
+		return -EINVAL;
+
+	errno = 0;
+
+	switch (va->type) {
+	case BEX_TYPE_STR:
+		free(va->data.str);
+		va->data.str = strndup(str, sz);
+		break;
+	case BEX_TYPE_U64:
+		va->data.u64 = strtoumax(str, &end, 10);
+		if (errno || str == end)
+			DBG(VAL, bex_debugobj(va, "strtoumax() failed"));
+		break;
+	case BEX_TYPE_S64:
+		va->data.s64 = strtoimax(str, &end, 10);
+		if (errno || str == end)
+			DBG(VAL, bex_debugobj(va, "strtosmax() failed"));
+		break;
+	case BEX_TYPE_FLOAT:
+		va->data.fl = strtold(str, &end);
+		if (errno || str == end)
+			DBG(VAL, bex_debugobj(va, "strtold() failed"));
+		break;
+	default:
+		break;
+	}
+
+	return 0;
 }

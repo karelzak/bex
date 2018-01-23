@@ -103,6 +103,7 @@ struct libbex_channel {
 	struct libbex_array	*reply;
 
 	char	*inbuff;
+	size_t	inbuffsiz;
 
 	struct list_head	channels;		/* platform events list */
 

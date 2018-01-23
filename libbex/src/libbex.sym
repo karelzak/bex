@@ -31,6 +31,8 @@ global:
 	bex_array_get;
 	bex_array_to_stream;
 	bex_array_is_empty;
+	bex_array_fill_from_string;
+	bex_array_fill_unnamed_from_string;
 
 	bex_new_value;
 	bex_ref_value;
@@ -49,6 +51,7 @@ global:
 	bex_value_get_float;
 	bex_new_value_float;
 	bex_value_set_generated;
+	bex_value_set_from_string;
 	 
 	bex_new_platform;
 	bex_ref_platform;
@@ -93,6 +96,8 @@ global:
 	bex_channel_get_heartbeat;
 	bex_channel_get_symbol;
 	bex_channel_set_symbol;
+	bex_channel_update_inbuff;
+	bex_channel_wakeup;
 
 	bex_new_ticker_channel;
 local:

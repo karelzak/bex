@@ -329,7 +329,9 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 		DBG(PLAT, bex_debugobj(pl, "received data for channel '%ju'", id));
 		ch = bex_platform_get_channel_by_id(pl, id);
 		if (ch) {
-			;
+			rc = bex_channel_update_inbuff(ch, str);
+			if (!rc)
+				bex_channel_wakeup(ch);
 		} else
 			DBG(PLAT, bex_debugobj(pl, "unknown channel [ignore]"));
 	}

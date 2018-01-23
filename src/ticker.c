@@ -16,7 +16,11 @@ static int count;
 
 static int ticker_callback(struct libbex_platform *pl, struct libbex_channel *ch)
 {
-	fprintf(stderr, "HAVE TICK\n");
+	struct libbex_array *ar = bex_channel_get_replies(ch);
+	struct libbex_value *va = bex_array_get(ar, "LAST_PRICE");
+
+	fprintf(stderr, "%s: %Lg\n", bex_channel_get_symbol(ch),
+				    bex_value_get_float(va));
 	return 0;
 }
 

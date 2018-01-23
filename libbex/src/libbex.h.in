@@ -161,6 +161,8 @@ extern const struct timeval *bex_channel_get_heartbeat(struct libbex_channel *ch
 
 extern int bex_channel_set_symbol(struct libbex_channel *ch, const char *sy);
 extern const char *bex_channel_get_symbol(struct libbex_channel *ch);
+extern int bex_channel_wakeup(struct libbex_channel *ch);
+extern int bex_channel_update_inbuff(struct libbex_channel *ch, const char *str);
 
 /* channel-ticker.c */
 extern struct libbex_channel *bex_new_ticker_channel(const char *symbol);
@@ -206,6 +208,7 @@ extern struct libbex_value *bex_array_nget(struct libbex_array *ar, const char *
 extern int bex_array_to_stream(struct libbex_array *ar, FILE *stream);
 extern int bex_array_is_empty(struct libbex_array *ar);
 extern int bex_array_fill_from_string(struct libbex_array *ar, const char *str);
+extern int bex_array_fill_unnamed_from_string(struct libbex_array *ar, const char *str, char **next);
 
 /* value */
 extern struct libbex_value *bex_new_value(const char *name);
@@ -229,6 +232,8 @@ extern char *bex_value_get_str(struct libbex_value *va);
 extern int bex_value_set_float(struct libbex_value *va, long double num);
 extern long double bex_value_get_float(struct libbex_value *va);
 extern struct libbex_value *bex_new_value_float(const char *name, long double n);
+
+extern int bex_value_set_from_string(struct libbex_value *va, const char *str, size_t sz);
 
 #ifdef __cplusplus
 }
