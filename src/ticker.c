@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 		count++;
 	}
 
-//	bex_platform_unsubscribe_channels(pl);
+	bex_platform_unsubscribe_channels(pl);
 done:
 	bex_unref_platform(pl);
 

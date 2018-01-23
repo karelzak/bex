@@ -151,5 +151,8 @@ extern int wss_disconnect(struct libbex_platform *pl);
 extern int wss_service(struct libbex_platform *pl);
 extern int wss_send(struct libbex_platform *pl, unsigned char *str, size_t sz);
 
+/* event.c */
+extern int bex_is_event_string(const char *str, char **name);
+
 #endif /* _LIBBEX_PRIVATE_H */
 

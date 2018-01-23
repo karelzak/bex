@@ -1,6 +1,5 @@
 
 #include "bexP.h"
-#include "strutils.h"
 
 #include <libwebsockets.h>
 
@@ -303,40 +302,6 @@ int bex_platform_send(struct libbex_platform *pl, unsigned char *str, size_t sz)
 	return wss_send(pl, str, sz);
 }
 
-static int is_event_string(const char *str, char **name)
-{
-	const char *p = (char *) str, *n;
-
-	*name = NULL;
-
-	p = skip_space(p);
-	if (*p != '{')
-		return 0;
-
-	p = skip_space(++p);
-	if (strncmp(p, "\"event\"", 7) != 0)
-		return 0;
-	p += 7;
-
-	p = skip_space(p);
-	if (*p != ':')
-		return 0;
-
-	p = skip_space(++p);
-	if (*p != '"')
-		return 0;
-
-	n = ++p;
-	while (*p && *p != '"')
-		p++;
-
-	if (!*p)
-		return 0;
-
-	*name = strndup(n, p - n);
-	return *name ? 1 : 0;
-}
-
 int bex_platform_receive(struct libbex_platform *pl, const char *str)
 {
 	char *name = NULL;
@@ -344,7 +309,7 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 
 	DBG(PLAT, bex_debugobj(pl, "receive: >>>%s<<<", str));
 
-	if (is_event_string(str, &name)) {
+	if (bex_is_event_string(str, &name)) {
 		struct libbex_event *ev;
 
 		DBG(PLAT, bex_debugobj(pl, "received event with name '%s'", name));
@@ -357,7 +322,7 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 		} else
 			DBG(PLAT, bex_debugobj(pl, "event unssuported [ignore]"));
 
-	}
+	} //else if (bex_is_channel_string(str, &id))
 
 	free(name);
 	return rc;

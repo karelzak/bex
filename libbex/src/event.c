@@ -1,5 +1,7 @@
 
 #include "bexP.h"
+#include "strutils.h"
+
 static void free_event(struct libbex_event *ev)
 {
 	if (!ev)
@@ -250,3 +252,37 @@ void bex_event_reset_reply(struct libbex_event *ev)
 	bex_reset_array(ev->reply);
 }
 
+
+int bex_is_event_string(const char *str, char **name)
+{
+	const char *p = (char *) str, *n;
+
+	*name = NULL;
+
+	p = skip_space(p);
+	if (*p != '{')
+		return 0;
+
+	p = skip_space(++p);
+	if (strncmp(p, "\"event\"", 7) != 0)
+		return 0;
+	p += 7;
+
+	p = skip_space(p);
+	if (*p != ':')
+		return 0;
+
+	p = skip_space(++p);
+	if (*p != '"')
+		return 0;
+
+	n = ++p;
+	while (*p && *p != '"')
+		p++;
+
+	if (!*p)
+		return 0;
+
+	*name = strndup(n, p - n);
+	return *name ? 1 : 0;
+}
