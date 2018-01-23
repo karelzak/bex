@@ -154,5 +154,8 @@ extern int wss_send(struct libbex_platform *pl, unsigned char *str, size_t sz);
 /* event.c */
 extern int bex_is_event_string(const char *str, char **name);
 
+/* channel.h */
+extern int bex_is_channel_string(const char *str, uint64_t *id);
+
 #endif /* _LIBBEX_PRIVATE_H */
 

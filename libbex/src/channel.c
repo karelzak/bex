@@ -1,5 +1,6 @@
 
 #include "bexP.h"
+#include "strutils.h"
 
 static void free_channel(struct libbex_channel *ch)
 {
@@ -322,5 +323,29 @@ int bex_channel_set_symbol(struct libbex_channel *ch, const char *sy)
 const char *bex_channel_get_symbol(struct libbex_channel *ch)
 {
 	return ch ? ch->symbol : NULL;
+}
+
+
+int bex_is_channel_string(const char *str, uint64_t *id)
+{
+	const char *p = (char *) str;
+	char *end;
+
+	p = skip_space(p);
+	if (*p != '[')
+		return 0;
+
+	p = skip_space(++p);
+	errno = 0;
+	*id = strtoumax(p, &end, 10);
+	if (errno || p == end)
+		return 0;
+
+	p = end;
+	p = skip_space(p);
+	if (*p != ',')
+		return 0;
+
+	return 1;
 }
 

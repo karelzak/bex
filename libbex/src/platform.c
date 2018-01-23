@@ -306,6 +306,7 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 {
 	char *name = NULL;
 	int rc = 0;
+	uint64_t id;
 
 	DBG(PLAT, bex_debugobj(pl, "receive: >>>%s<<<", str));
 
@@ -322,7 +323,16 @@ int bex_platform_receive(struct libbex_platform *pl, const char *str)
 		} else
 			DBG(PLAT, bex_debugobj(pl, "event unssuported [ignore]"));
 
-	} //else if (bex_is_channel_string(str, &id))
+	} else if (bex_is_channel_string(str, &id)) {
+		struct libbex_channel *ch;
+
+		DBG(PLAT, bex_debugobj(pl, "received data for channel '%ju'", id));
+		ch = bex_platform_get_channel_by_id(pl, id);
+		if (ch) {
+			;
+		} else
+			DBG(PLAT, bex_debugobj(pl, "unknown channel [ignore]"));
+	}
 
 	free(name);
 	return rc;
