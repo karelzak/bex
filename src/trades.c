@@ -13,18 +13,38 @@
 #include "strutils.h"
 
 static int count;
+static int tu = 1, te = 1;
 
+/*
+ * te: fast messages -- as soon as they match in the trading engine, but without ID (use SEQ ID as ID)
+ * tu: delay 1-2 seconds in traiding engine, but have trade ID
+ */
 static int trades_callback(struct libbex_platform *pl, struct libbex_channel *ch)
 {
-	struct libbex_array *ar = bex_channel_get_replies(ch);
-	struct libbex_value *am = bex_array_get(ar, "AMOUNT");
-	struct libbex_value *pr = bex_array_get(ar, "PRICE");
+	const char *type = bex_channel_get_reply_type(ch);
+	struct libbex_array *ar;
+	struct libbex_value *am, *pr;
 
+	if (type && tu + te < 2) {
+		if (tu == 0 && endswith(type, "tu"))
+			return 0;
+		if (te == 0 && endswith(type, "te"))
+			return 0;
+	} else if (!type) {
+		if (!tu || !te)
+			return 0;
+		type = "";
+	}
 
-	fprintf(stderr, "%s: %.2Lf : %+.8Lf\n",
+	ar = bex_channel_get_replies(ch);
+	am = bex_array_get(ar, "AMOUNT");
+	pr = bex_array_get(ar, "PRICE");
+
+	fprintf(stderr, "%s: %.2Lf : %+.8Lf [%s]\n",
 			bex_channel_get_symbol(ch),
 			bex_value_get_float(pr),
-			bex_value_get_float(am));
+			bex_value_get_float(am),
+			type);
 	return 0;
 }
 
@@ -52,10 +72,12 @@ int main(int argc, char **argv)
 		{ "help",	no_argument,		0, 'h' },
 		{ "version",	no_argument,		0, 'V' },
 		{ "count",	required_argument,	0, 'c' },
+		{ "ignore-tu",	no_argument,		0, 'u' },
+		{ "ignore-te",	no_argument,		0, 'e' },
 		{ NULL, 0, 0, 0 },
 	};
 
-	while ((c = getopt_long(argc, argv, "c:hV", longopts, NULL)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:hVue", longopts, NULL)) != -1) {
 
 		switch(c) {
 		case 'c':
@@ -67,6 +89,12 @@ int main(int argc, char **argv)
 			break;
 		case 'h':
 			usage();
+			break;
+		case 'u':
+			tu = 0;
+			break;
+		case 'e':
+			te = 0;
 			break;
 		default:
 			errtryhelp(1);
