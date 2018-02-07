@@ -17,10 +17,20 @@ static int count;
 static int ticker_callback(struct libbex_platform *pl, struct libbex_channel *ch)
 {
 	struct libbex_array *ar = bex_channel_get_replies(ch);
-	struct libbex_value *va = bex_array_get(ar, "LAST_PRICE");
+	struct libbex_value *lp = bex_array_get(ar, "LAST_PRICE");
+	struct libbex_value *hi = bex_array_get(ar, "HIGH");
+	struct libbex_value *lo = bex_array_get(ar, "LOW");
+	struct libbex_value *vo = bex_array_get(ar, "VOLUME");
+	struct libbex_value *dc_perc = bex_array_get(ar, "DAILY_CHANGE_PERC");
 
-	fprintf(stderr, "%s: %Lg\n", bex_channel_get_symbol(ch),
-				    bex_value_get_float(va));
+
+	fprintf(stderr, "%s: %.2Lf (%.1Lf%%) high=%.2Lf, low=%.2Lf, 24h_volume=%Lg\n",
+			bex_channel_get_symbol(ch),
+			bex_value_get_float(lp),
+			bex_value_get_float(dc_perc) * 100,
+			bex_value_get_float(hi),
+			bex_value_get_float(lo),
+			bex_value_get_float(vo));
 	return 0;
 }
 
