@@ -87,6 +87,8 @@ struct libbex_array {
 	struct libbex_value	**items;
 };
 
+#define BEX_CHANNEL_REPLY_TYPE_BUFSZ	32
+
 struct libbex_channel {
 	int	refcount;
 	char	*name;
@@ -101,6 +103,7 @@ struct libbex_channel {
 
 	struct libbex_event	*subscribe;
 	struct libbex_array	*reply;
+	char			reply_type[BEX_CHANNEL_REPLY_TYPE_BUFSZ];
 
 	char	*inbuff;
 	size_t	inbuffsiz;

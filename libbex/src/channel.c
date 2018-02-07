@@ -326,6 +326,17 @@ const char *bex_channel_get_symbol(struct libbex_channel *ch)
 	return ch ? ch->symbol : NULL;
 }
 
+/**
+ *
+ * bex_channel_get_reply_type
+ * @ch: channel
+ *
+ * Returns: string with reply type or NULL if not specified
+ */
+const char *bex_channel_get_reply_type(struct libbex_channel *ch)
+{
+	return ch && *ch->reply_type ? ch->reply_type : NULL;
+}
 
 int bex_is_channel_string(const char *str, uint64_t *id)
 {
@@ -421,6 +432,35 @@ static int process_data(struct libbex_channel *ch, const char *str)
 	return rc;
 }
 
+/* "type", [ */
+static int process_message_type(struct libbex_channel *ch, const char **str0)
+{
+	const char *str = *str0, *p;
+	size_t len;
+
+	if (*str != '"')
+		return -EINVAL;
+
+	str++;
+	p = strchr(str, '"');
+	if (!p)
+		return -EINVAL;
+
+	len = p - str;
+	if (len > BEX_CHANNEL_REPLY_TYPE_BUFSZ - 1)
+		return -EINVAL;
+
+	memcpy(ch->reply_type, str, len);
+	ch->reply_type[len] = '\0';
+
+	p = skip_space(p + 1);
+	if (*p == ',')
+		p = skip_space(p + 1);
+
+	*str0 = p;
+	return 0;
+}
+
 /**
  * bex_channel_wakeup:
  * @ch: channel
@@ -437,10 +477,12 @@ int bex_channel_wakeup(struct libbex_channel *ch)
 	if (!ch)
 		return -EINVAL;
 
-	DBG(CHAN, bex_debugobj(ch, "wakeup channel"));
+	DBG(CHAN, bex_debugobj(ch, "wakeup channel %s", ch->name));
 
 	if (!ch->inbuff || !*ch->inbuff)
 		goto done;
+
+	*ch->reply_type = '\0';
 
 	p = strchr(ch->inbuff, ',');		/* [CHANNEL_ID,  */
 	if (!p)
@@ -454,9 +496,13 @@ int bex_channel_wakeup(struct libbex_channel *ch)
 			p = skip_space(p + 4);
 			if (*p == ']')
 				bex_channel_update_heartbeat(ch);
-		} else
-			DBG(CHAN, bex_debugobj(ch, "unsupported channel reply"));
-		break;
+			break;
+		} else {						/* "tu" ("te", "ws", ...) */
+			rc = process_message_type(ch, &p);
+			if (rc)
+				goto done;
+		}
+		/* fallthrough */
 	case '[':
 		rc = process_data(ch, p);
 		break;
