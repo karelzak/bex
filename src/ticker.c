@@ -25,7 +25,7 @@ static int ticker_callback(struct libbex_platform *pl, struct libbex_channel *ch
 
 
 	fprintf(stderr, "%s: %.2Lf (%.1Lf%%) high=%.2Lf, low=%.2Lf, 24h_volume=%Lg\n",
-			bex_channel_get_symbol(ch),
+			bex_channel_get_symbolname(ch),
 			bex_value_get_float(lp),
 			bex_value_get_float(dc_perc) * 100,
 			bex_value_get_float(hi),

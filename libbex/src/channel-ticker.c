@@ -16,7 +16,7 @@ static int is_ticker_event(struct libbex_channel *ch, struct libbex_event *ev)
 
 	/* check symbol */
 	va = bex_array_get(ar, "symbol");
-	if (!va || strcmp(bex_value_get_str(va), bex_channel_get_symbol(ch)) != 0)
+	if (!va || strcmp(bex_value_get_str(va), bex_channel_get_symbolname(ch)) != 0)
 		return 0;
 
 	DBG(CHAN, bex_debugobj(ch, "ticker event detected"));
@@ -50,7 +50,7 @@ struct libbex_channel *bex_new_ticker_channel(const char *symbol)
 	ev = NULL;
 
 	bex_channel_set_verify_callback(ch, is_ticker_event);
-	bex_channel_set_symbol(ch, symbol);
+	bex_channel_set_symbolname(ch, symbol);
 
 	/* reply definition */
 	bex_channel_add_reply(ch, bex_new_value_float("BID", 0));

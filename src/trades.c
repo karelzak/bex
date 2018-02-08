@@ -24,6 +24,7 @@ static int trades_callback(struct libbex_platform *pl, struct libbex_channel *ch
 	const char *type = bex_channel_get_reply_type(ch);
 	struct libbex_array *ar;
 	struct libbex_value *am, *pr;
+	const struct libbex_symbol *sy;
 
 	if (type && tu + te < 2) {
 		if (tu == 0 && endswith(type, "tu"))
@@ -36,15 +37,33 @@ static int trades_callback(struct libbex_platform *pl, struct libbex_channel *ch
 		type = "";
 	}
 
+	sy = bex_channel_get_symbol(ch);
+
 	ar = bex_channel_get_replies(ch);
 	am = bex_array_get(ar, "AMOUNT");
 	pr = bex_array_get(ar, "PRICE");
 
-	fprintf(stderr, "%s: %.2Lf : %+.8Lf [%s]\n",
-			bex_channel_get_symbol(ch),
-			bex_value_get_float(pr),
-			bex_value_get_float(am),
-			type);
+	if (!sy) {
+	       fprintf(stdout, "%s: %.2Lf : %+.8Lf\n",
+                       bex_channel_get_symbolname(ch),
+                       bex_value_get_float(pr),
+                       bex_value_get_float(am));
+	       return 0;
+	}
+
+	fprintf(stdout, "%s/%s: ",
+			bex_symbol_get_leftname(sy),
+			bex_symbol_get_rightname(sy));
+
+	fprintf(stdout, bex_symbol_get_price_format(sy),
+			bex_value_get_float(pr));
+
+	fputc(' ', stdout);
+
+	fprintf(stdout, bex_symbol_get_amount_format(sy),
+			bex_value_get_float(am));
+
+	fputc('\n', stdout);
 	return 0;
 }
 

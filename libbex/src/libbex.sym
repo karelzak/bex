@@ -95,13 +95,21 @@ global:
 	bex_channel_update_heartbeat;
 	bex_channel_get_heartbeat;
 	bex_channel_get_symbol;
-	bex_channel_set_symbol;
+	bex_channel_get_symbolname;
+	bex_channel_set_symbolname;
 	bex_channel_get_reply_type;
 	bex_channel_update_inbuff;
 	bex_channel_wakeup;
 
 	bex_new_ticker_channel;
 	bex_new_trades_channel;
+
+	bex_get_symbol;
+	bex_symbol_get_name;
+	bex_symbol_get_leftname;
+	bex_symbol_get_rightname;
+	bex_symbol_get_price_format;
+	bex_symbol_get_amount_format;
 local:
 	*;
 };

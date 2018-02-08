@@ -11,7 +11,7 @@ static void free_channel(struct libbex_channel *ch)
 	bex_unref_event(ch->subscribe);
 	bex_unref_array(ch->reply);
 	free(ch->name);
-	free(ch->symbol);
+	free(ch->symbolname);
 	free(ch->inbuff);
 
 	DBG(CHAN, bex_debugobj(ch, "done"));
@@ -290,28 +290,41 @@ const struct timeval *bex_channel_get_heartbeat(struct libbex_channel *ch)
 }
 
 /**
- * bex_channel_set_symbol
+ * bex_channel_set_symbolname
  * @ch: channel
- * @sy: symbol
+ * @name: symbol
  *
  * Returns: 0 or <0 on error
  */
-int bex_channel_set_symbol(struct libbex_channel *ch, const char *sy)
+int bex_channel_set_symbolname(struct libbex_channel *ch, const char *name)
 {
 	char *p = NULL;
 
 	if (!ch)
 		return -EINVAL;
 
-	if (sy) {
-		p = strdup(sy);
+	if (name) {
+		p = strdup(name);
 		if (!p)
 			return -ENOMEM;
 	}
 
-	free(ch->symbol);
-	ch->symbol = p;
+	free(ch->symbolname);
+	ch->symbolname = p;
+	ch->symbol = bex_get_symbol(p);
 	return 0;
+}
+
+/**
+ *
+ * bex_channel_get_symbolname
+ * @ch: channel
+ *
+ * Returns: symbol name string
+ */
+const char *bex_channel_get_symbolname(struct libbex_channel *ch)
+{
+	return ch ? ch->symbolname : NULL;
 }
 
 /**
@@ -319,9 +332,9 @@ int bex_channel_set_symbol(struct libbex_channel *ch, const char *sy)
  * bex_channel_get_symbol
  * @ch: channel
  *
- * Returns: symbol string
+ * Returns: symbol description
  */
-const char *bex_channel_get_symbol(struct libbex_channel *ch)
+const struct libbex_symbol *bex_channel_get_symbol(struct libbex_channel *ch)
 {
 	return ch ? ch->symbol : NULL;
 }

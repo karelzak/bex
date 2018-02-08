@@ -92,8 +92,10 @@ struct libbex_array {
 struct libbex_channel {
 	int	refcount;
 	char	*name;
-	char	*symbol;
 	uint64_t id;
+
+	char	*symbolname;
+	const struct libbex_symbol *symbol;
 
 	struct timeval	last_update;
 
@@ -124,6 +126,14 @@ struct libbex_event {
 	struct libbex_array	*reply;
 
 	struct list_head	events;		/* platform events list */
+};
+
+struct libbex_symbol {
+	const char	*name;
+	const char	*left;
+	const char	*right;
+	const char	*amount;
+	const char	*price;
 };
 
 struct libbex_platform {
