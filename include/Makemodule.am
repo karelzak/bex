@@ -6,4 +6,6 @@ dist_noinst_HEADERS += \
 	include/xalloc.h \
 	include/strutils.h \
 	include/nls.h \
+	include/colors.h \
+	include/color-names.h \
 	include/strutils.h

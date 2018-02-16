@@ -61,3 +61,4 @@ libbex/src/libbex.h
 #
 bex-fetch
 bex-ping
+bex-trades

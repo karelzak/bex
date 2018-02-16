@@ -10,7 +10,7 @@ bex_ticker_CFLAGS = $(bex_cflags)
 bex_ticker_LDFLAGS = $(bex_ldflags)
 
 bex_trades_SOURCES = src/trades.c
-bex_trades_LDADD = $(bex_ldadd)
+bex_trades_LDADD = $(bex_ldadd) libtcolors.la
 bex_trades_CFLAGS = $(bex_cflags)
 bex_trades_LDFLAGS = $(bex_ldflags)
 

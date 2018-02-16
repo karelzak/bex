@@ -11,9 +11,11 @@
 #include "nls.h"
 #include "xalloc.h"
 #include "strutils.h"
+#include "colors.h"
 
 static int count;
 static int tu = 1, te = 1;
+static long double last_price = 0;
 
 /*
  * te: fast messages -- as soon as they match in the trading engine, but without ID (use SEQ ID as ID)
@@ -25,6 +27,7 @@ static int trades_callback(struct libbex_platform *pl, struct libbex_channel *ch
 	struct libbex_array *ar;
 	struct libbex_value *am, *pr;
 	const struct libbex_symbol *sy;
+	long double price;
 
 	if (type && tu + te < 2) {
 		if (tu == 0 && endswith(type, "tu"))
@@ -43,10 +46,20 @@ static int trades_callback(struct libbex_platform *pl, struct libbex_channel *ch
 	am = bex_array_get(ar, "AMOUNT");
 	pr = bex_array_get(ar, "PRICE");
 
+	price = bex_value_get_float(pr);
+
+	if (last_price) {
+		if (last_price < price)
+			color_scheme_enable("price-up", UL_COLOR_GREEN);
+		else if (last_price > price)
+			color_scheme_enable("price-down", UL_COLOR_BOLD_RED);
+	}
+	last_price = price;
+
 	if (!sy) {
 	       fprintf(stdout, "%s: %.2Lf : %+.8Lf\n",
                        bex_channel_get_symbolname(ch),
-                       bex_value_get_float(pr),
+                       price,
                        bex_value_get_float(am));
 	       return 0;
 	}
@@ -56,12 +69,14 @@ static int trades_callback(struct libbex_platform *pl, struct libbex_channel *ch
 			bex_symbol_get_rightname(sy));
 
 	fprintf(stdout, bex_symbol_get_price_format(sy),
-			bex_value_get_float(pr));
+			price);
 
 	fputc(' ', stdout);
 
 	fprintf(stdout, bex_symbol_get_amount_format(sy),
 			bex_value_get_float(am));
+
+	color_disable();
 
 	fputc('\n', stdout);
 	return 0;
@@ -85,11 +100,13 @@ static void __attribute__((__noreturn__)) usage(void)
 int main(int argc, char **argv)
 {
 	int c, count_max = 0;
+	int colormode = UL_COLORMODE_AUTO;
 	const char *uri = LIBBEX_DEFAULT_URI;
 	struct libbex_platform *pl;
 	static const struct option longopts[] = {
 		{ "help",	no_argument,		0, 'h' },
 		{ "version",	no_argument,		0, 'V' },
+		{ "color",      optional_argument,	0, 'L' },
 		{ "count",	required_argument,	0, 'c' },
 		{ "ignore-tu",	no_argument,		0, 'u' },
 		{ "ignore-te",	no_argument,		0, 'e' },
@@ -115,11 +132,17 @@ int main(int argc, char **argv)
 		case 'e':
 			te = 0;
 			break;
+		case 'L':
+			if (optarg)
+				colormode = colormode_or_err(optarg,
+						_("unsupported color mode"));
+			break;
 		default:
 			errtryhelp(1);
 		}
 	}
 
+	colors_init(colormode, "bex-trades");
 	bex_init_debug(0);
 
 	pl = bex_new_platform(uri);

@@ -212,6 +212,129 @@ AC_DEFINE_UNQUOTED([LIBBEX_VERSION], ["$LIBBEX_VERSION"], [libbex version string
 
 AC_CONFIG_HEADERS([config.h])
 
+
+dnl wide-char ncurses
+AC_ARG_WITH([ncursesw],
+  AS_HELP_STRING([--with-ncursesw], [build with wide-char ncurses, enabled by default]),
+  [], [with_ncursesw=auto]
+)
+have_ncursesw=no
+have_ncursesw_header=no
+AS_IF([test "x$with_ncursesw" != xno], [
+  UL_NCURSES_CHECK([ncursesw])
+  AS_IF([test "x$have_ncursesw" = xyes], [
+    AC_CHECK_HEADERS([ncursesw/ncurses.h], [have_ncursesw_header=yes])
+    AC_CHECK_HEADERS([ncursesw/term.h])
+
+    # Define HAVE_NCURSES_H only if check for HAVE_NCURSESW_NCURSES_H is
+    # unsuccessful to avoid too many *_H permitations in config.h
+    AS_IF([test "x$have_ncursesw_header" = xno], [
+	   AC_CHECK_HEADERS([ncurses.h], [have_ncursesw_header=yes])
+	   AC_CHECK_HEADERS([term.h])
+    ])
+    AS_IF([test "x$have_ncursesw_header" = xno], [have_ncursesw=no])
+  ])
+  AS_IF([test "x$have_ncursesw" = xyes], [
+    CURSES_LIB_NAME="ncursesw"
+    AC_DEFINE([HAVE_LIBNCURSESW], [1], [Define if ncursesw library available])
+  ])
+])
+AS_CASE([$with_ncursesw:$have_ncursesw],
+  [yes:no], [AC_MSG_ERROR([ncursesw selected, but library not found])])
+
+
+dnl non-wide ncurses
+AC_ARG_WITH([ncurses],
+  AS_HELP_STRING([--with-ncurses], [build with non-wide ncurses, disabled by default]),
+  [], [with_ncurses=auto]
+)
+have_ncurses=no
+have_ncurses_header=no
+AS_CASE([$with_ncurses:$build_widechar],
+  [yes:yes], [AC_MSG_ERROR([wide-char support enabled, but non-wide ncurses selects])])
+
+AS_IF([test "x$have_ncursesw" = xno -a "x$with_ncurses" != xno ], [
+  UL_NCURSES_CHECK([ncurses])
+  AS_IF([test "x$have_ncurses" = xyes], [
+    AC_CHECK_HEADERS([ncurses/ncurses.h], [have_ncurses_header=yes])
+    AC_CHECK_HEADERS([ncurses/term.h])
+
+    # Define HAVE_NCURSES_H only if check for HAVE_NCURSES_NCURSES_H is
+    # unsuccessful to avoid too many *_H permitations in config.h
+    AS_IF([test "x$have_ncurses_header" = xno], [
+	   AC_CHECK_HEADERS([ncurses.h], [have_ncurses_header=yes])
+	   AC_CHECK_HEADERS([term.h])
+    ])
+    AS_IF([test "x$have_ncurses_header" = xno], [have_ncurses=no])
+  ])
+  AS_IF([test "x$have_ncurses" = xyes], [
+    CURSES_LIB_NAME="ncurses"
+    AC_DEFINE([HAVE_LIBNCURSES], [1], [Define if ncurses library available])
+  ])
+])
+AS_CASE([$with_ncurses:$have_ncurses],
+  [yes:no], [AC_MSG_ERROR([ncurses selected, but library not found])])
+
+AC_SUBST([NCURSES_CFLAGS])
+AC_SUBST([NCURSES_LIBS])
+AM_CONDITIONAL([HAVE_NCURSES], [test "x$have_ncursesw" = xyes -o  "x$have_ncurses" = xyes])
+
+
+AC_ARG_WITH([slang],
+  AS_HELP_STRING([--with-slang], [compile cfdisk with slang rather than ncurses]),
+  [], [with_slang=no]
+)
+have_slang=no
+AS_IF([test "x$with_slang" = xyes], [
+  AC_CHECK_HEADERS([slang.h slang/slang.h])
+  AC_CHECK_HEADERS([slcurses.h slang/slcurses.h],
+		   [have_slang=yes], [], [
+#ifdef HAVE_SLANG_H
+#include <slang.h>
+#elif defined(HAVE_SLANG_SLANG_H)
+#include <slang/slang.h>
+#endif
+])
+  AS_IF([test "x$have_slang" = xno], [
+    AC_MSG_ERROR([slang selected but slcurses.h not found])],
+    [CURSES_LIB_NAME=slang
+  ])
+])
+AM_CONDITIONAL([HAVE_SLANG], [test "x$have_slang" = xyes])
+
+
+AS_IF([test "x$have_slang" = xyes -o "x$have_ncursesw" = xyes -o "x$have_ncurses" = xyes], [
+	AC_CHECK_LIB([$CURSES_LIB_NAME], use_default_colors, [
+		     AC_DEFINE(HAVE_USE_DEFAULT_COLORS, 1,
+			       [Define if curses library has the use_default_colors().])
+	])
+	AC_CHECK_LIB([$CURSES_LIB_NAME], resizeterm, [
+		     AC_DEFINE(HAVE_RESIZETERM, 1,
+			       [Define if curses library has the resizeterm().])
+	])
+])
+
+
+AC_ARG_WITH([tinfo], AS_HELP_STRING([--without-tinfo], [compile without libtinfo]),
+  [], [with_tinfo=auto]
+)
+have_tinfo=no
+have_tinfow=no
+AS_IF([test "x$with_tinfo" != xno], [
+  AS_IF([test "x$have_ncursesw" = xyes], [
+    UL_TINFO_CHECK([tinfow])
+  ])
+  AS_IF([test "x$have_tinfow" = xno], [
+    UL_TINFO_CHECK([tinfo])
+  ])
+])
+AC_SUBST([TINFO_LIBS])
+AC_SUBST([TINFO_CFLAGS])
+AM_CONDITIONAL([HAVE_TINFO], [test "x$have_tinfo" = xyes -o "x$have_tinfow" = xyes])
+AS_IF([test "x$have_tinfo" = xyes -o "x$have_tinfow" = xyes], [
+  AC_DEFINE(HAVE_LIBTINFO, 1, [Define if libtinfo or libtinfow available.])
+])
+
 #
 # Don't use configure.ac to replace install paths! See Makefile PATHFILES for
 # more details.
